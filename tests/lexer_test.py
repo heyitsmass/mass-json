@@ -1,4 +1,9 @@
-from operator import truediv
+"""
+
+View the lexer in effect: https://regex101.com/r/4GlRwx/1
+
+"""
+
 import re
  
 class UnknownTokenError(Exception):
