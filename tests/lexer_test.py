@@ -1,4 +1,9 @@
-from operator import truediv
+"""
+
+View the lexer in effect: https://regex101.com/r/4GlRwx/1
+
+"""
+
 import re
  
 class UnknownTokenError(Exception):
@@ -111,21 +116,10 @@ class Lexer(object):
         return _InputScanner(self, input)
 
 rules = [ 
-    ("valid", r"{*?\s*\"[^\"]*?\"\s*:{1}\s*({"
-              r"((\s*\"[^\"]*?\"):("
-                r"(\s*\"[^\"]*?\",)\s*|"
-                r"(\s*\"[^\"]*?\"\s*},\s*)|"
-                r"\s*[-]?\d*[.]?\d?([Ee][-]?\d+)?,\s*|"
-                r"\s*\[{1}(((\s*\"[^\"]*\",)*\s*(\".*?\")\s*\]|\s*\])?,|"
-                r"\s*{)|"
-                r"\s*\"[^\"]*?\"(\s*})*)"
-              r")+|"
-              r"\"[^\"]*?\"(,)?(?(13)[^\}]|"
-              r"\s*}*)\s*|"
-              r"\{\},|"
-              r"\[\]|"
-              r"\s*[-]?\d*[.]?\d?([Ee][-]?\d+)?,\s*)|"
-              r"\s*](\s*\}*)?")
+    ("Arr_begin", r"?&"),
+    ("Arr_valid_number", r"(?:(?:[-]?\d+(\.)?(?(1)\d+)),)"),
+    ("Arr_valid_string", r"\s*(?:\".+?\",\s*)*?\".+?\"\s*\]"),
+
 ]
 
 data = open('sample.json', 'r').read()
