@@ -38,7 +38,8 @@ rules = [
   ]), 
     ('default', [
       ('obj_begin', r'{'),
-      ('string', r'')
+      ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
+      ('digit', r'[-]?\d+?(.)?(?(1)\d+([Ee])(?(2)[-]?\d+|\d*)|([Ee])?(?(3)[-]?\d+|\d*))'),
       ('new_line', r'\n'),
       ('skip', r'[ \u0020\u000A\u000D\u0009\t]'),
       ('mismatch', r'.')
@@ -62,12 +63,10 @@ class _scanner(object):
     else: 
       raise InputError(self._default)
 
-  def _tokenizer(self, rules): 
-    tmp = dict()
+  def _tokenizer(self, rules, _ret=dict()): 
     for name, sub_rule in rules: 
-      sub_rule = '|'.join('(?P<%s>%s)' % pair for pair in sub_rule)
-      tmp[name] = sub_rule
-    return tmp
+      _ret[name] = '|'.join('(?P<%s>%s)' % pair for pair in sub_rule)
+    return _ret
 
   def _shrink(self, length): 
     tmp = '' 
