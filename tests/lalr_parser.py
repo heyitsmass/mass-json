@@ -39,7 +39,8 @@ rules = [
     ('default', [
       ('obj_begin', r'{'),
       ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
-      ('digit', r'[-]?\d+?(.)?(?(1)\d+([Ee])(?(2)[-]?\d+|\d*)|([Ee])?(?(3)[-]?\d+|\d*))'),
+      ('digit', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-]?\d+)?'),
+      ('keyword', r'true|false|null'),
       ('new_line', r'\n'),
       ('skip', r'[ \u0020\u000A\u000D\u0009\t]'),
       ('mismatch', r'.')
@@ -79,8 +80,7 @@ class _scanner(object):
 
     last_match = ''
 
-    i = 0
-    while i < self._size: 
+    while len(self._data) > 0: 
       match = re.match(self._tok_regex, self._data)
       if match: 
         value = match.group() 
@@ -105,12 +105,8 @@ class _scanner(object):
         if kind not in ['skip', 'new_line']: 
           print(Token(kind, value, self._line_num))
 
-        i = self._position
-
       else: 
         raise Exception("Parse Error: (did you include a mismatch case? r'.')")
-
-    print(self._position)
 
 
 data = open('sample_2.json', 'r').read() 
