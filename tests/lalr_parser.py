@@ -39,12 +39,42 @@ rules = [
     ('default', [
       ('obj_begin', r'{'),
       ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
-      ('digit', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-]?\d+)?'),
+      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-]?\d+)?'),
       ('keyword', r'true|false|null'),
       ('new_line', r'\n'),
       ('skip', r'[ \u0020\u000A\u000D\u0009\t]'),
       ('mismatch', r'.')
   ])
+]
+
+rules_two = [ 
+    ('_object', [
+      ('object', r'{' + '_whitespace' + '_string' + '_whitespace' + r':' + '_whitespace' + '_value'), 
+      ('comma', r','), 
+      ('obj_end', r'}'), 
+      ('new_line', r'\n')
+  ]),
+    ('_array', [ 
+      ('array', r'\[' + '_whitespace' | '_value'), 
+      ('comma', r','), 
+      ('arr_end', r'\]'),
+      ('new_line', r'\n') 
+  ]),
+    ('_value', [ 
+      ('value', '_whitespace' + '_string' | '_number' | '_object' | '_array' | r'true|false|null' + '_whitespace'),
+  ]), 
+    ('_string', [
+      ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'), 
+      ('new_line', r'\n')
+  ]),
+    ('_number', [ 
+      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'), 
+      ('new_line', r'\n')
+  ]),
+    ('_whitespace', [ 
+      ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]'), 
+      ('new_line', r'\n')
+  ])  
 ]
 
 
@@ -102,7 +132,7 @@ class _scanner(object):
         self._data = re.sub(self._tok_regex, '', self._data, 1)
         last_match = match 
 
-        if kind not in ['skip', 'new_line']: 
+        if kind not in ['whitespace', 'new_line']: 
           print(Token(kind, value, self._line_num))
 
       else: 
