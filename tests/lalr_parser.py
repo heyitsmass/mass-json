@@ -21,62 +21,19 @@ class TokenError(Exception):
   def __str__(self): 
     return "%s unexpected found on line %s" % (self._value, self._column)
 
-
-
-
 rules = [ 
-    ('object', [
-      ('string', r'\".+?\"'),
-      ('comma', r','), 
-      ('colon', r':'), 
-      ('new_line', r'\n'),
-      ('skip', r'[ \u0020\u000A\u000D\u0009\t]'),
-      ('mismatch', r'.')
-  ]),
-    ('token_array', [
-
-  ]), 
-    ('default', [
-      ('obj_begin', r'{'),
-      ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
-      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-]?\d+)?'),
-      ('keyword', r'true|false|null'),
-      ('new_line', r'\n'),
-      ('skip', r'[ \u0020\u000A\u000D\u0009\t]'),
-      ('mismatch', r'.')
-  ])
+  ('_object', r'{+'+(r'_whitespace+_string+_whitespace+:+_whitespace+_value+_comma')+r'+}+_newline'),
+  ('_comma', r','),
+  ('_newline', r'\n'),
+  ('_array', r'\[+'+((r'_whitespace|_value')+r'_comma')+r'+\]+_newline'),
+  ('_value', r'_whitespace+'+(r'_string|_number|_object|_array|_boolean|_null')+r'+_whitespace+_newline'), 
+  ('_string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
+  ('_boolean', r'true|false'),
+  ('_null', r'null'), 
+  ('_number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
+  ('_whitespace', r'[ \u0020\u000A\u000D\u0009\t]'),
+  ('_mismatch', r'.'), 
 ]
-
-rules_two = [ 
-    ('_object', [
-      ('object', r'{' + '_whitespace' + '_string' + '_whitespace' + r':' + '_whitespace' + '_value'), 
-      ('comma', r','), 
-      ('obj_end', r'}'), 
-      ('new_line', r'\n')
-  ]),
-    ('_array', [ 
-      ('array', r'\[' + '_whitespace' | '_value'), 
-      ('comma', r','), 
-      ('arr_end', r'\]'),
-      ('new_line', r'\n') 
-  ]),
-    ('_value', [ 
-      ('value', '_whitespace' + '_string' | '_number' | '_object' | '_array' | r'true|false|null' + '_whitespace'),
-  ]), 
-    ('_string', [
-      ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'), 
-      ('new_line', r'\n')
-  ]),
-    ('_number', [ 
-      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'), 
-      ('new_line', r'\n')
-  ]),
-    ('_whitespace', [ 
-      ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]'), 
-      ('new_line', r'\n')
-  ])  
-]
-
 
 class _scanner(object): 
   def __init__(self, data, rules, line_num=0): 
@@ -140,9 +97,17 @@ class _scanner(object):
 
 
 data = open('sample_2.json', 'r').read() 
-scanner = _scanner(data, rules) 
+#scanner = _scanner(data, rules) 
 
-scanner.scan() 
+#scanner.scan() 
+
+for i in range(len(rules)): 
+  print(rules[i][0], ':', end='')
+  tmp = rules[i][1]
+  if tmp == '.': 
+    print(' else') 
+  else: 
+    print(' '+rules[i][1])
 
 
 """
