@@ -23,32 +23,48 @@ rules = [
   ('_mismatch', r'.'), 
 ]
 
-from typing import NamedTuple
-
-class Parse(tuple): 
-  def __init__(self, parse): 
-    tmp = tuple()
-
-    tmp(tuple((x, y)))
-
-    for rule in parse[0]: 
-      print(rule)
-
 class _Scanner(object): 
   def __init__(self, data, rules, line_num = 0): 
     self._position = 0
     self._lineno = line_num 
     self._data = data 
     self._size = len(data) 
-    self._rules = _InputParser(rules)._parse 
+    self._rules = _RuleParser(rules)
+    self._ids = self._rules._ruleids
 
-    
-    
+    if __depth__ > 3: 
+      for rule in self._rules: 
+        print(rule) 
+
+      for id, rule in self._rules: 
+        print(id, rule)  
 
 
-class _InputParser(object): 
+    print(self._ids) 
+
+    for id, rule in self._rules: 
+      print(id, rule)
+
+class _RuleParser(object): 
   def __init__(self, rules): 
-    self._parse = Parse(self.parse_rule(rules))
+    self._tmp = self.parse_rule(rules)
+    self._position = 0
+    self._data = list() 
+    for x, y in enumerate(self._tmp[0], 0): 
+      self._data.append(tuple((self._tmp[1][x], y)))
+    self._ruleids = self._tmp[1]
+    
+  
+  def __iter__(self): 
+    return self 
+  
+  def __next__(self): 
+    self._position +=1 
+    if self._position >= len(self._data): 
+      self._position = 0
+      raise StopIteration 
+    
+    return self._data[self._position]
 
 
   def parse_rule(self, rules):
@@ -59,7 +75,7 @@ class _InputParser(object):
     for rule in rules: 
       captured = None
       rule_id = rule[0]   # current rule identifier
-      rule_st = rule[1]   # current rule condition
+      rule_st = rule[1]   # current rule statement
 
       if __depth__ > 1:
         #Outputs current identifier 
@@ -87,7 +103,7 @@ class _InputParser(object):
       else: 
         tmp.append(self.tokenizer((rule_id, rule_st), rule_ids))              # single - rule capture 
     
-    return (tmp, rule_ids) 
+    return (tmp, rule_ids)
 
   def capture(self, i, rule, _final=r''):
     _final += '\('  
