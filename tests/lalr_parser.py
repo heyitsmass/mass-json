@@ -22,7 +22,7 @@ class TokenError(Exception):
     return "%s unexpected found on line %s" % (self._value, self._column)
 
 rules = [ 
-  ('_object', r'{+'+(r'_whitespace+_string+_whitespace+:+_whitespace+_value+_comma')+r'+}+_newline'),
+  ('_object', r'{+'+(r'_whitespace+_string+_whitespace+:+_whitespace+_value+_comma+_whitespace+_newline')+r'+}+_newline'),
   ('_comma', r','),
   ('_newline', r'\n'),
   ('_array', r'\[+'+((r'_whitespace|_value')+r'_comma')+r'+\]+_newline'),

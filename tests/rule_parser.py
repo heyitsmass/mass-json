@@ -2,14 +2,12 @@ import re
 
 import argparse
 
-__depth__ = 0
-
 argparser = argparse.ArgumentParser(description="Scan a json file for grammatical accuracy.")
 argparser.add_argument('--depth', metavar='#', type=int)
 
 args = vars(argparser.parse_args())
 
-__depth__ = args['depth'] 
+__depth__ = args['depth'] if args['depth'] else 0
 
 rules = [ 
   ('_object', r'{+\(_whitespace+_string+_whitespace+:+_whitespace+_value+_comma+_newline\)+}+_newline'),
@@ -25,23 +23,38 @@ rules = [
   ('_mismatch', r'.'), 
 ]
 
+from typing import NamedTuple
+
+class Parse(tuple): 
+  def __init__(self, parse): 
+    tmp = tuple()
+
+    tmp(tuple((x, y)))
+
+    for rule in parse[0]: 
+      print(rule)
 
 class _Scanner(object): 
-  def __init__(self, data, rules, line_num=0): 
+  def __init__(self, data, rules, line_num = 0): 
+    self._position = 0
+    self._lineno = line_num 
     self._data = data 
     self._size = len(data) 
-    self._rules = rules
-    self._position = 0
-    self._lineno = 0
+    self._rules = _InputParser(rules)._parse 
 
-    self.parse_rule(rules)
+    
+    
 
-  def _tokenizer(self, rules, _ret=dict()): 
-    print(rules) 
+
+class _InputParser(object): 
+  def __init__(self, rules): 
+    self._parse = Parse(self.parse_rule(rules))
+
 
   def parse_rule(self, rules):
     # List of rule identifiers 
     rule_ids = [rules[i][0] for i in range(len(rules))]
+    tmp = list() 
 
     for rule in rules: 
       captured = None
@@ -70,13 +83,11 @@ class _Scanner(object):
         i+=1
       
       if captured: 
-        self.scan((rule_id, rule_st), rule_ids, captured[0]) # multi - rule capture 
+        tmp.append(self.tokenizer((rule_id, rule_st), rule_ids, captured[0])) # multi - rule capture 
       else: 
-        self.scan((rule_id, rule_st), rule_ids)              # single - rule capture 
-
-      #return 
-
-    return 
+        tmp.append(self.tokenizer((rule_id, rule_st), rule_ids))              # single - rule capture 
+    
+    return (tmp, rule_ids) 
 
   def capture(self, i, rule, _final=r''):
     _final += '\('  
@@ -101,10 +112,10 @@ class _Scanner(object):
       i+=1
     raise Exception("Error") 
 
-  def scan(self, rule, ids, _capture=None): 
+  def tokenizer(self, rule, ids, _capture=None): 
 
     rule_sts = [(rule[0], rule[1])] if not _capture else [(rule[0], st) for st in rule[1].split('+')]
-    tmp = list()
+    token_set = list()
 
     if __depth__ > 1:  
       print("\u001b[1mList of split tokens:\u001b[0m", rule_sts) 
@@ -113,17 +124,20 @@ class _Scanner(object):
 
     for pair in rule_sts: 
       if pair[1] in ['<capture>', _capture] or pair[1] in ids: 
-        tmp.append(pair[1])
+        token_set.append(pair[1])
         continue  
-      tmp.append('(?P<%s>%s)' % pair)
+      token_set.append('(?P<%s>%s)' % pair)
 
     if __depth__ > 0: 
-      print("\x1b[1m[\x1b[32m✓\x1b[0m]\x1b[1m\x1b[1mToken and Identifier set:\x1b[0m", tmp)
+      print("\x1b[1m[\x1b[32m✓\x1b[0m]\x1b[1m\x1b[1mToken set:\x1b[0m", token_set)
       if _capture: 
-        print("\x1b[1m[\x1b[33m!\x1b[0m]\x1b[1m\t      \x1bs[3mCapture Group:\x1b[0m\x1b[3m", _capture)
+        print("\x1b[1m[\x1b[33m!\x1b[0m]\x1b[1m\t      \x1b[3mCapture Group:\x1b[0m", _capture)
+    
+    return token_set
         
 
 data = open('sample_2.json', 'r').read() 
+
 scanner = _Scanner(data, rules) 
 
 #scanner.scan() 
