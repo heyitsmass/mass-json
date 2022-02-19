@@ -96,7 +96,7 @@ class _scanner(object):
         raise Exception("Parse Error: (did you include a mismatch case? r'.')")
 
 
-data = open('sample_2.json', 'r').read() 
+data = open('sample_1.json', 'r').read() 
 #scanner = _scanner(data, rules) 
 
 #scanner.scan() 
