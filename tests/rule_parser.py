@@ -69,27 +69,7 @@ class _Scanner(object):
           self.scan() 
 
       return 
-      
-    '''
-    for id, rule in self._rules: 
-      print(id + ':') 
-      for sub_rule in rule: 
-        print('\t'+sub_rule) 
-        self.tok_regex = ''
-        if sub_rule == '<capture>': 
-          self._captures[id] = self._captures[id].replace('\(', '').replace('\)', '')
-          tmp = self._captures[id].split('+')
-          for something in tmp: 
-            if something in self._ids:
-              ... #Gonna need some changing (think about modifying rules to a dict) 
-          print('\t\t'+self._captures[id]) 
-        elif sub_rule in self._ids: 
-          ...
-        else: 
-          self.tok_regex = sub_rule
 
-          self.scan()
-      '''
     
   def scan(self): 
 
@@ -130,9 +110,6 @@ class _RuleParser(object):
   def values(self): 
     return self._data.values()
   
-  
-
-
   def parse_rule(self, rules):
     # List of rule identifiers 
     rule_ids = [rules[i][0] for i in range(len(rules))]
