@@ -1,6 +1,6 @@
 import re
 import argparse
-from typing import Union
+from typing import NamedTuple, Union
 args = argparse.ArgumentParser(
     description="Scans a .json file for grammatical accuracy")
 args.add_argument('filename', metavar='filename',
@@ -13,6 +13,11 @@ args = vars(args.parse_args())
 
 __depth__ = args['debug'] if args['debug'] else 0
 __filename__ = args['filename']
+
+class Token(NamedTuple): 
+  type:str 
+  value:str
+  line:int 
 
 
 class CaptureError(Exception):
@@ -308,7 +313,7 @@ class Scanner(object):
 
   def __init__(self, data:str, rules:Rules):
     """
-    Constructs all the necessary attributes for the Scanner object.
+    Constructs all the necessary attributes for a Scanner object.
 
     Parameters
     ----------
@@ -319,10 +324,80 @@ class Scanner(object):
     """
     self.data = data
     self.rules = Rules(rules)
+    self.lineno = 0
+    
+    for id in self.rules: 
+      if type(self.rules[id]) == list: 
+        self.__scan_list(self.rules[id]) 
+        '''
+        #print(self.rules[id]) 
+        for token in self.rules[id]: 
+          match = ''
+          #print(token) 
+          if type(token) == str: 
+            tok_regex = token 
+            match = re.match(tok_regex, self.data)
+            if match: 
+              value = match.group() 
+              kind = match.lastgroup 
+              self.data = re.sub(tok_regex, '', self.data, 1) 
+              print(Token(kind, value, self.lineno))
+              continue  
+          elif type(token) == tuple: 
+            self.__scan_tuple(token) 
+        '''
+      return 
 
-    for id in self.rules:
-      print(id, ':', self.rules[id])
+  def __scan_tuple(self, token): 
+    prev = ''
+    for t in token: 
+      t = self.__split(t) 
+      #print(t)
+      if type(self.rules[t[0]]) == str: 
+        #print(t[0]) 
+        tok_regex = self.rules[t[0]]
+        #print(tok_regex) 
+        match = re.match(tok_regex, self.data) 
+        if match: 
+          self.printToken(match, tok_regex, prev) 
+      elif type(self.rules[t[0]]) == list:
+        
+               
+        #self.__scan_list(self.rules[t[0]])
+        ...
+    return 
+  
+  def __scan_list(self, token): 
+    prev = '' 
+    for t in token: 
+      if type(t) == str:
+        t = self.__split(t) 
+        print(t) 
+        if len(t) == 1:    
+          tok_regex = t[0]
+        else: 
+          tok_regex = self.rules[t[0]] 
+          #print(tok_regex)
+          return    
+        match = re.match(tok_regex, self.data) 
+        if match: 
+          self.printToken(match, tok_regex, prev) 
+      elif type(t) == tuple: 
+        self.__scan_tuple(t) 
 
+    return 
+
+
+  def printToken(self, match, tok_regex, prev=''): 
+    value = match.group() 
+    kind = match.lastgroup 
+    print(Token(kind, value, self.lineno)) 
+    self.data = re.sub(tok_regex, '', self.data, 1)
+    return kind
+
+  def __split(self, t): 
+    t = re.split(r'([+|])', t) 
+    return t[:len(t)-1] if len(t)>1 else t
 
 if __name__ == "__main__":
   data = open(__filename__, 'r').read()
@@ -330,12 +405,13 @@ if __name__ == "__main__":
       ('object',
        r'{+\(whitespace+string+whitespace+colon+whitespace+value+comma+newline\)+}'),
       ('value',
-          r'whitespace+\(string|number|object|array|boolean|null\)+whitespace'),
+          r'whitespace+\(string|number|object|array|boolean|NULL\)+whitespace'),
       ('string',
           r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
       ('array',
           r'\[+\(whitespace|value+comma\)+\]+newline'),
       ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]'),
+      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
       ('boolean', r'true|false'),
       ('newline', r'\n'),
       ('NULL', r'null'),
