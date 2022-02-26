@@ -33,7 +33,7 @@ class CaptureError(Exception):
         Returns the error message including id and rule
   """
 
-  def __init__(self, id: str, rule: str, capture: str = None):
+  def __init__(self, id:str, rule:str, capture:str = None):
     """
       Constructs all the necessary attributes for the CaptureError object.
 
@@ -74,7 +74,7 @@ class Capture(object):
         Constructs all the necessary attributes for the Capture object.
   """
 
-  def __init__(self, value: str, index: int):
+  def __init__(self, value:str, index:int):
     """
       Constructs all the necessary attributes for the Capture object.
 
@@ -125,7 +125,7 @@ class Rules(object):
     
   """
 
-  def __init__(self, rules: list):
+  def __init__(self, rules:list):
     """
       Constructs all the necessary attributes for the Rules object.
 
@@ -160,7 +160,7 @@ class Rules(object):
     """Returns the key, values in rules"""
     return self.rules.items()
 
-  def __parse(self, rules: list) -> dict:
+  def __parse(self, rules:list) -> dict:
     """
         Parses the rules defined by the user
 
@@ -197,7 +197,7 @@ class Rules(object):
 
     return ret
 
-  def __capture(self, id: str, rule: str, index: int) -> Capture:
+  def __capture(self, id:str, rule:str, index:int) -> Capture:
     """
         Captures any sets of information that should be repeatedly scanned by the RuleScanner
 
@@ -239,7 +239,7 @@ class Rules(object):
       i += 1
     raise CaptureError(id, rule)
 
-  def __tokenize(self, id: str, rule: Union[list, str], capture_val: str, rule_ids: list) -> Union[list, str]:
+  def __tokenize(self, id:str, rule:Union[list, str], capture_val:str, rule_ids:list) -> Union[list, str]:
     """
         Converts rules into tokens readable by re.match() 
 
@@ -306,7 +306,7 @@ class Scanner(object):
     TBD 
   """
 
-  def __init__(self, data: str, rules: Rules):
+  def __init__(self, data:str, rules:Rules):
     """
     Constructs all the necessary attributes for the Scanner object.
 
