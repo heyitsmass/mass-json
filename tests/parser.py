@@ -286,7 +286,7 @@ class Rules(object):
         i += 1
 
     else:
-      statements = '(?P<%s>%s)' % (id, statements)
+      return '(?P<%s>%s)' % (id, statements)
 
     return statements
 
