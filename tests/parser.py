@@ -291,30 +291,24 @@ class Rules(object):
     return statements
 
 
-class RuleScanner(object):
+class Scanner(object):
   """
-    A class to represent a person.
+    A class to represent an iterable Scanner object where each token can be listed via iteration
 
     ...
 
     Attributes
     ----------
-    name : str
-        first name of the person
-    surname : str
-        family name of the person
-    age : int
-        age of the person
+    TBD
 
     Methods
     -------
-    info(additional=""):
-        Prints the person's name and age.
+    TBD 
   """
 
   def __init__(self, data: str, rules: Rules):
     """
-    Constructs all the necessary attributes for the RuleScanner object.
+    Constructs all the necessary attributes for the Scanner object.
 
     Parameters
     ----------
@@ -350,4 +344,4 @@ if __name__ == "__main__":
       ('mismatch', r'.')
   ]
 
-  scanner = RuleScanner(data, rules)
+  scanner = Scanner(data, rules)
