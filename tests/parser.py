@@ -1,6 +1,5 @@
 import re
 import argparse
-from secrets import token_urlsafe
 from typing import NamedTuple, Union
 args = argparse.ArgumentParser(
     description="Scans a .json file for grammatical accuracy")
