@@ -1,5 +1,5 @@
 # *************** Imports ************** # 
-from typing import NamedTuple, Union
+from typing import Iterator, NamedTuple, Union
 import argparse
 import re 
 
@@ -7,9 +7,12 @@ import re
 args = argparse.ArgumentParser(
     description="Scans a .json file for grammatical accuracy")
 args.add_argument('filename', metavar='filename',
-                  type=str, help="set the name for the input file")
+                  type=str, help="Set the name for the input file")
+args.add_argument('--debug', action='store_true', help="Enable debug")
+
 args = vars(args.parse_args())
-__filename__ = args['filename'] 
+__FILENAME__ = args['filename'] 
+__DEBUG__ = args['debug'] 
 
 
 # ********** Custom Exceptions ********** # 
@@ -133,22 +136,36 @@ class ScanError(Exception):
 
 
 # ************** Custom Types ************** # 
-class Capture(NamedTuple):
+class Capture(object):
   """
     A class to represent a capture tuple
     
     Attributes
     ----------
-      value : str 
-        holds the information of the capture 
-      index : int 
-        the end index from the main data the rule was captured from
       parent : str 
-        id of the parent rule    
+        parent rule data
+      capture : str 
+        holds the information of the capture 
   """
-  value:str 
-  index:int 
-  parent:str 
+  def __init__(self, parent:str, capture:str=None) -> None: 
+    self.parent = parent 
+    self.capture = capture 
+
+  def __setitem__(self, index:any, value:any) -> any: 
+    if index == 0: 
+      self.parent = value
+    elif index == 1: 
+      self.capture = value 
+    else: 
+      raise Exception
+    return 
+  
+  def __getitem__(self, index:any) -> any: 
+    if index == 0: 
+      return self.parent 
+    elif index ==  1: 
+      return self.capture 
+    raise Exception 
 
 class Token(NamedTuple):
   """
@@ -168,43 +185,111 @@ class Token(NamedTuple):
   line:int 
 
 class Rules(object): 
-  def __init__(self, rules): 
-    self.rules = self.__parse_rules(rules) 
+  def __init__(self, rules:list) -> None: 
+    self.__rules = self.__parse(rules) 
+
+    if __DEBUG__: print("\u001b[1m\u001b[32m3.", self.__rules, '\u001b[0m') 
     
-  def __parse_rules(self, rules): 
+  def __parse(self, rules:list) -> dict: 
+    __ids = [id for id, rule in rules]
+    __ret = dict()
     for arg in rules: 
       id = arg[0] 
       rule = arg[1] 
 
-      print(id, ':', rule) 
-      rule = self.__capture(id, rule) 
+      if __DEBUG__: print("\u001b[1m\u001b[31m1.", id, ':', rule, '\u001b[0m')
 
-    #print(rules) 
+      capture = self.__capture(id, rule) 
+     
+      if capture[1]: 
+        capture[0] = capture[0].split('+') 
+        capture[1] = re.split(r'([|+])', capture[1]) 
+        c = 0 
+        final = list() 
+        while c+1 < len(capture[1]): 
+          if c == 0: 
+            final.append(capture[1][c]) 
+            c+=1
+            continue 
+          tmp = capture[1][c] + capture[1][c+1]
+          final.append(tmp) 
+          c+=2
+        # Convert to tuple to prevent further modification 
+        capture[1] = tuple(final)
+
+        a = 0
+        while a < len(capture[0]): 
+          if 'capture' in capture[0][a]: 
+            capture[0][a] = capture[1] 
+          elif capture[0][a] not in __ids: 
+            capture[0][a] = '(?P<%s>%s)'% (id, capture[0][a])
+          a+=1 
+          continue 
+        # Convert to tuple to prevent further modification 
+        capture[0] = tuple(capture[0]) 
+
+        if __DEBUG__: print("\u001b[1m\u001b[33m1a.", capture[0], capture[1], '\u001b[0m')    # Debug
+      else: 
+        capture[0] = '(?P<%s>%s)'% (id, capture[0])
+        if __DEBUG__: print("\u001b[1m\u001b[36m1b.", capture[0], '\u001b[0m')    # Debug
+      __ret[id] = capture[0] 
+
+      if __DEBUG__: print("\u001b[1m\u001b[35m2.", id, capture[0], '\u001b[0m')    # Debug
+    return __ret 
   
-  def __capture(self, id, rule): 
-    tmp = re.split(r'\%\)|\%\(', rule)
-    #tmp = rule.split('%)').split('%(')
-    print(tmp)
-    ...
+  def __iter__(self) -> Iterator: 
+    return iter(self.__rules) 
+  
+  def __getitem__(self, key:any) -> any: 
+    return self.__rules[key] 
+  
+  def __setitem__(self, key:any, value:any) -> any: 
+    self.__rules[key] = value 
+  
+  def keys(self): 
+    return self.__rules.keys()
+  
+  def values(self): 
+    return self.__rules.values() 
+  
+  def items(self): 
+    return self.__rules.items() 
+  
+  def __capture(self, id:str, rule:str) -> Capture: 
+    __tmp = re.split(r'(\(\%|\%\))', rule)
+    if len(__tmp) > 1: 
+      i = 0
+      while i < len(__tmp): 
+        if __tmp[i] == '(%': 
+          rule = rule.replace(__tmp[i+1], 'capture')
+          return Capture(rule, __tmp[i+1]) 
+        i+=1
+    elif len(__tmp) == 1: 
+      return Capture(rule)
+    raise CaptureError(id, rule) 
+    
 
 class Scanner(object):
-  def __init__(self, data, rules): 
+  def __init__(self, data:str, rules:list): 
     self.data = data 
     self.rules = Rules(rules) 
+
+    for key in self.rules: 
+      print(key, ':', self.rules[key]) 
 
 
 # ************* Main 'Function' ************* # 
 if __name__ == "__main__":
-  data = open(__filename__, 'r').read()
+  data = open(__FILENAME__, 'r').read()
   rules = [
       ('object',
-       r'{+%(whitespace+string+whitespace+colon+whitespace+value+comma+newline%)+}'),
+       r'{+(%whitespace+string+whitespace+colon+whitespace+value+comma+newline%)+}'),
       ('value',
-          r'whitespace+%(string|number|object|array|boolean|NULL%)+whitespace'),
+          r'whitespace+(%string|number|object|array|boolean|NULL%)+whitespace'),
       ('string',
           r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
       ('array',
-          r'\[+%(whitespace+value+comma+whitespace+newline%)+\]+newline'),
+          r'\[+(%whitespace+value+comma+whitespace+newline%)+\]+newline'),
       ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
       ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
       ('boolean', r'true|false'),
