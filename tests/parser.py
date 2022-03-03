@@ -493,7 +493,7 @@ if __name__ == "__main__":
   data = open(__filename__, 'r').read()
   rules = [
       ('object',
-       r'{+\(whitespace+string+whitespace+colon+whitespace+value+comma+newline\)+}'),
+       r'{+\(whitespace+string+whitespace+colon+whitespace+value+comma|newline\)+}'),
       ('value',
           r'whitespace+\(string|number|object|array|boolean|NULL\)+whitespace'),
       ('string',
