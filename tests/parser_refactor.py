@@ -164,10 +164,11 @@ class Token(NamedTuple):
       line : int 
         The line number the data was found at 
   """
-  type:str 
-  value:str 
-  line:int 
+  type:str
+  value:str
+  line:int
 
+  
 class Rules(object): 
   def __init__(self, rules:list) -> None: 
     self.__rules = self.__parse(rules) 
@@ -256,18 +257,22 @@ class Rules(object):
 class Scanner(object):
   def __init__(self, data:str, rules:list): 
     self.__data = data 
-    self.__rules = Rules(rules) 
+    self.__rules = Rules(rules)
+    self.__tokens = list()
     self.__lineno = 0 
+    self.__scan() 
 
     if __DEBUG__: 
       for key in self.__rules: 
         print(key, ':', self.__rules[key])
+
+  def __iter__(self): 
+    for e in self.__tokens: 
+      yield e 
     
-  def scan(self): 
+  def __scan(self): 
     ids = list(self.__rules.keys()) 
     default = self.__rules[ids[0]]
-
-    #print(default) 
 
     for arg in default: 
       if type(arg) == str: 
@@ -275,151 +280,95 @@ class Scanner(object):
         match = re.match(tok_regex, self.__data) 
 
         if match: 
-          kind = match.group() 
-          value = match.lastgroup
+          value = match.group() 
+          kind = match.lastgroup
 
-          print(Token(value, kind, self.__lineno)) 
+          self.__tokens.append(Token(kind, value, self.__lineno))
+          #print(Token(kind, value, self.__lineno)) 
 
-          self.__data = re.sub(tok_regex, '', self.__data, 1) 
-        #raise TokenError(tok_regex) 
+          self.__data = re.sub(tok_regex, '', self.__data, 1)
+        else: 
+          raise ScanError
       elif type(arg) == tuple: 
-        #print(arg) 
-        self.__scan_tuple(arg, ids) 
-
+        self.__scan_tuple(arg, ids)
 
     
+    if len(self.__data) > 0: 
+      raise ScanError
 
-
-        #print(arg) 
-      #print(arg) 
 
   def __scan_tuple(self, rule:tuple, ids:list): 
-    #print(rule) 
-    prev = '' 
-    i = 0 
-    #print(len(rule)) 
-    while i < len(rule):
-      if type(rule[i]) == tuple: 
-        self.__scan_tuple(rule[i], ids)
-        #if match: 
-        #  print("match %s" % match)
-        #  print(rule[i]) 
-        #  i-=1
-        #  continue 
-        i+=1 
-        continue  
-      elif '?P' in rule[i]: 
-        #print(rule[i]) 
-        tok_regex = rule[i] 
-        match = re.match(tok_regex, self.__data)
-        if match: 
-          value = match.group() 
-          kind = match.lastgroup
-          print(Token(kind, value, self.__lineno)) 
-          self.__data = re.sub(tok_regex, '', self.__data, 1) 
-          i+=1
-          continue   
-        else: 
-          #raise Exception("%s was required" % tok_regex) 
-          return match 
-
-      delim = '' 
+    
+    i = 0
+    while i < len(rule): 
+      arg = rule[i] 
       tmp = '' 
-      if rule[i] not in ids: 
-        delim = rule[i][0] 
-        tmp = rule[i][1:len(rule[i])] 
-      else: 
-        tmp = rule[i] 
 
-      #print(tmp, delim, end=' ') 
-      if delim == '+': 
-        #print("Required")
-        tok_regex = self.__rules[tmp]
-        if type(tok_regex) == tuple: 
-          self.__scan_tuple(tok_regex, ids) 
+      if arg not in ids: 
+        if type(arg) == tuple: 
+          self.__scan_tuple(arg, ids) 
           i+=1 
           continue 
-        match = re.match(tok_regex, self.__data)
-        if match:
-          prev = match 
-          value = match.group() 
-          kind = match.lastgroup
-          print(Token(kind, value, self.__lineno)) 
-          self.__data = re.sub(tok_regex, '', self.__data, 1)
-        elif not match and tmp in ['whitespace', 'comma', 'newline']:
-          
-          if type(rule) == tuple and i+1 >= len(rule) and prev:  
-            print("rule") 
-          i+=1 
-          continue 
-        elif not match: 
-
-          raise Exception("%s was required" % tok_regex) 
-        
-      elif delim == '|': 
-        #print("Optional")
-        tok_regex = self.__rules[tmp]
-        #print(tok_regex) 
-        if type(tok_regex) == tuple: 
-          self.__scan_tuple(tok_regex, ids) 
-          i+=1
-          continue 
-          return 
-        match = re.match(tok_regex, self.__data) 
-
-        if match: 
-          value = match.group() 
-          kind = match.lastgroup 
-          print(Token(kind, value, self.__lineno)) 
-          self.__data = re.sub(tok_regex, '', self.__data, 1) 
+        elif '?P' in arg: 
+          tok_regex = arg 
+        elif type(arg) == str: 
+          tmp = arg[1:len(arg)]
+          tok_regex = self.__rules[tmp] 
         else: 
-          i+=1 
-          continue 
-          raise Exception 
+          raise ScanError
       else: 
+        tmp = arg 
         tok_regex = self.__rules[tmp] 
 
-        match = re.match(tok_regex, self.__data) 
-        if match: 
-          value = match.group() 
-          kind = match.lastgroup
-          print(Token(kind, value, self.__lineno)) 
+      if type(tok_regex) == tuple: 
+        self.__scan_tuple(tok_regex, ids) 
+        i+=1 
+        continue  
 
-          self.__data = re.sub(tok_regex, '', self.__data, 1) 
-        elif not match and tmp == 'whitespace': 
-          i+=1 
-          continue
-        else:
-          if not match and rule[i+1][0] == '|': 
-            i+=1
-            continue 
-          print(tmp, tok_regex) 
-          raise Exception 
-      
-      if i+1 >= len(rule) and match:
-        i = 0
+      #print(i, tok_regex, delim) 
+
+      match = re.match(tok_regex, self.__data) 
+
+      if match: 
+        kind = match.lastgroup 
+        value = match.group()
+
+        self.__tokens.append(Token(kind, value, self.__lineno))
+
+        self.__data = re.sub(tok_regex, '', self.__data, 1) 
+
+        if kind == 'whitespace' and '\n' in value: 
+          self.__lineno += 1
+  
+      elif (not match and tmp in ['whitespace', 'newline'] or 
+            not match and i+1 < len(rule) and rule[i+1][0] == '|'): 
+        i+=1
+        continue
+      else: 
+        return  
+
+      if i == len(rule)-1 and match: 
+        i = 0 
         continue 
-          #print("Repeat") 
       i+=1 
-    return match 
-
+    return True 
 
 # ************* Main 'Function' ************* # 
 if __name__ == "__main__":
   data = open(__FILENAME__, 'r').read()
   rules = [
       ('object',
-       r'{+(%whitespace+string+whitespace+colon+whitespace+value+comma+newline%)+}'),
+       r'{+(%whitespace+string+whitespace+colon+whitespace+value+comma+whitespace%)+}'),
       ('value',
           r'whitespace+(%string|number|object|array|boolean|NULL%)+whitespace'),
       ('string',
           r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
       ('array',
-          r'\[+(%whitespace+value+comma+whitespace+newline%)+\]+newline'),
+          r'\[+(%whitespace+value+comma+whitespace%)+\]+whitespace'),
       ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
       ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
       ('boolean', r'true|false'),
-      ('newline', r'\n'),
+      #('newline', r'\n'),
       ('NULL', r'null'),
       ('colon', r':'),
       ('comma', r','),
@@ -428,4 +377,5 @@ if __name__ == "__main__":
 
   scanner = Scanner(data, rules)
 
-  scanner.scan() 
+  for token in scanner:
+    print(token) 
