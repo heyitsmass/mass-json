@@ -337,9 +337,10 @@ class Scanner(object):
 
         self.__data = re.sub(tok_regex, '', self.__data, 1) 
 
+        # ***** User Customizations ***** #
         if kind == 'whitespace' and '\n' in value: 
           self.__lineno += 1
-  
+        # ***** User Customizations ***** #
       elif (not match and tmp in ['whitespace', 'newline'] or 
             not match and i+1 < len(rule) and rule[i+1][0] == '|'): 
         i+=1
@@ -368,7 +369,6 @@ if __name__ == "__main__":
       ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
       ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
       ('boolean', r'true|false'),
-      #('newline', r'\n'),
       ('NULL', r'null'),
       ('colon', r':'),
       ('comma', r','),
