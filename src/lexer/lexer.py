@@ -1,8 +1,9 @@
 # *************** Imports ************** # 
-from typing import Iterator, NamedTuple, Union
-import argparse
+from typing import Iterator, NamedTuple
+#import argparse
 import re 
 
+'''
 # ********* Argparse Arguments ********* # 
 args = argparse.ArgumentParser(
     description="Scans a .json file for grammatical accuracy")
@@ -13,7 +14,7 @@ args.add_argument('--debug', action='store_true', help="Enable debug")
 args = vars(args.parse_args())
 __FILENAME__ = args['filename'] 
 __DEBUG__ = args['debug'] 
-
+'''
 
 # ********** Custom Exceptions ********** # 
 class TokenError(Exception):
@@ -173,7 +174,7 @@ class Rules(object):
   def __init__(self, rules:list) -> None: 
     self.__rules = self.__parse(rules) 
 
-    if __DEBUG__: print("\u001b[1m\u001b[32mrules:", self.__rules, '\u001b[0m') 
+    #if __DEBUG__: print("\u001b[1m\u001b[32mrules:", self.__rules, '\u001b[0m') 
     
   def __parse(self, rules:list) -> dict: 
     __ids = [id for id, rule in rules]
@@ -182,7 +183,7 @@ class Rules(object):
       id = arg[0] 
       rule = arg[1] 
 
-      if __DEBUG__: print("\u001b[1m\u001b[31minput:", id, ':', rule, '\u001b[0m')
+      #if __DEBUG__: print("\u001b[1m\u001b[31minput:", id, ':', rule, '\u001b[0m')
 
       capture = self.__capture(id, rule) 
      
@@ -219,7 +220,7 @@ class Rules(object):
         #if __DEBUG__: print("\u001b[1m\u001b[36m1b.", capture[0], '\u001b[0m')    # Debug
       __ret[id] = capture[0] 
 
-      if __DEBUG__: print("\u001b[1m\u001b[33mparse:\t->", id, capture[0], '\u001b[0m')    # Debug
+      #if __DEBUG__: print("\u001b[1m\u001b[33mparse:\t->", id, capture[0], '\u001b[0m')    # Debug
     return __ret 
   
   def __iter__(self) -> Iterator: 
@@ -262,9 +263,9 @@ class Scanner(object):
     self.__lineno = 0 
     self.__scan() 
 
-    if __DEBUG__: 
-      for key in self.__rules: 
-        print(key, ':', self.__rules[key])
+    #if __DEBUG__: 
+    #  for key in self.__rules: 
+    #    print(key, ':', self.__rules[key])
 
   def __iter__(self): 
     for e in self.__tokens: 
@@ -345,6 +346,7 @@ class Scanner(object):
             not match and i+1 < len(rule) and rule[i+1][0] == '|'): 
         i+=1
         continue
+
       else: 
         return  
 
@@ -353,7 +355,7 @@ class Scanner(object):
         continue 
       i+=1 
     return True 
-
+'''
 # ************* Main 'Function' ************* # 
 if __name__ == "__main__":
   data = open(__FILENAME__, 'r').read()
@@ -378,4 +380,4 @@ if __name__ == "__main__":
   scanner = Scanner(data, rules)
 
   for token in scanner:
-    print(token) 
+    print(token) '''

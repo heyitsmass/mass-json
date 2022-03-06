@@ -1,102 +1,40 @@
-class package: 
-    def __init__(self, data, i=0): 
-        self.data = data 
-        self.index = i 
+import sys
+sys.path.append('../')
 
-def load_arr(data, i=1, json={}): 
-
-    string = "" 
-    arr = [] 
-
-    while i < len(data):
-        if data[i] == '{': 
-            packet = load_dict(data, i+1, json)
-            i = packet.index
-            arr.append(packet.data)
-            continue 
-        if data[i] == ']':
-            string = string.split(',')
-            for j, k in enumerate(string, 0): 
-                string[j] = k.strip() 
-                string[j] = string[j].replace('"', '') 
-                if len(string[j]) > 0: 
-                    arr.append(string[j]) 
-            break 
-
-        if data[i] not in ['\n']: 
-            string += data[i] 
-
-        i+=1 
-    return package(arr, i+1) 
+from lexer.lexer import Scanner
+import argparse
 
 
-def load_dict(data, i=1, json={}, final={}):
-    temp = {} 
-    string = key = '' 
-    while i < len(data): 
-        if data[i] in ['{', '}', '[']: 
-            if type(string) == str: 
-                string = string.splitlines()
+if __name__ == "__main__":
+  args = argparse.ArgumentParser(
+      description="Scans a .json file for grammatical accuracy")
+  args.add_argument('filename', metavar='filename',
+                    type=str, help="Set the name for the input file")
+  args = vars(args.parse_args())
+  __FILENAME__ = args['filename']
 
-            for j, k in enumerate(string, 0):
-                if type(k) != list: 
-                    string[j] = k.rstrip("',',': '") 
-                    string[j] = string[j].lstrip()
+  data = open(__FILENAME__, 'r').read()
+  rules = [
+      ('object',
+       r'{+(%whitespace+string+whitespace+colon+whitespace+value+comma+whitespace%)+}'),
+      ('value',
+          r'whitespace+(%string|number|object|array|boolean|NULL%)+whitespace'),
+      ('string',
+          r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
+      ('array',
+          r'\[+(%whitespace+value+comma+whitespace%)+\]+whitespace'),
+      ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
+      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
+      ('boolean', r'true|false'),
+      ('NULL', r'null'),
+      ('colon', r':'),
+      ('comma', r','),
+      ('mismatch', r'.')
+  ]
 
-                    string[j] = string[j].replace('"', '') 
+  scanner = Scanner(data, rules)
 
-                    key = value = '' 
-                    CHECK = KEY = True 
-                    VALUE = False 
-
-                    for letter in string[j]: 
-                        if letter == ':' and CHECK and KEY: 
-                            KEY = CHECK = False 
-                            VALUE = True 
-                            continue 
-                        if not VALUE: 
-                            key += letter 
-                        if not KEY: 
-                            value += letter 
-
-                    value = value.lstrip() 
-
-                    if key != '':
-                        temp[key] = value
-
-            string = ""
-            if data[i] == '{': 
-                packet = load_dict(data, i+1, json)
-                i = packet.index 
-                if key != '':
-                    temp[key] = packet.data 
-                else:  
-                    for key in packet.data: 
-                        json[key] = packet.data[key] 
-
-                if i < len(data)-1: 
-                    continue 
-                else: 
-                    if key:
-                        if key == str(next(iter(temp))): 
-                            return package(temp) 
-                        else: 
-                            final[key] = json 
-                            return package(final) 
-                    else: 
-                        return package(json) 
-            elif data[i] == '}': 
-                return package(temp, i+1) 
-            elif data[i] == '[': 
-                packet = load_arr(data, i+1, json)
-                i = packet.index
-                temp[key] = packet.data
-                continue 
-
-        string += data[i] 
-        i+=1
-    return package(final) 
+  for token in scanner: 
+      print(token) 
 
 
-def load(infile): 
-    return load_dict(infile.read()).data

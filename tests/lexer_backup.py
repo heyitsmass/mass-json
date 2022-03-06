@@ -368,7 +368,6 @@ if __name__ == "__main__":
       ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
       ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
       ('boolean', r'true|false'),
-      #('newline', r'\n'),
       ('NULL', r'null'),
       ('colon', r':'),
       ('comma', r','),
@@ -379,3 +378,45 @@ if __name__ == "__main__":
 
   for token in scanner:
     print(token) 
+
+
+"something =: something" 
+"""
+ rules:
+
+  i)  <expression> = <regex pattern or string>  
+  ii) <expression> = <expression><delimiter> := <repeated> =: <expression><delimiter> 
+
+  <repeated> : 
+    <expression><delimiter>, : 
+      This can be repeated n number of times where n >= 1
+
+  <delimiter> : 
+    + : 
+      required 
+    ? : 
+      not required 
+    | : 
+      optional 
+
+   
+    
+
+
+"""
+rules = [ 
+  ('object', '\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,comma?,whitespace?=:\}+'),
+  ('value', 'whitespace?:=string|,number|,object|,array|,boolean|,_null|=:whitespace?'),
+  ('string', '\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
+  ('array', '\[+:=whitespace?,value+,comma?,whitespace?=:\]+whitespace?'),
+  ('whitespace', '[ \u0020\u000A\u000D\u0009\t]+'),
+  ('boolean', 'true|false'),
+  ('_null', 'null'),
+  ('colon', ':'), 
+  ('comma', ','),
+  ('mismatch', '.')
+
+]
+
+
+
