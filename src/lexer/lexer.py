@@ -3,7 +3,7 @@ from typing import Iterator, NamedTuple
 #import argparse
 import re 
 
-'''
+"""
 # ********* Argparse Arguments ********* # 
 args = argparse.ArgumentParser(
     description="Scans a .json file for grammatical accuracy")
@@ -14,7 +14,7 @@ args.add_argument('--debug', action='store_true', help="Enable debug")
 args = vars(args.parse_args())
 __FILENAME__ = args['filename'] 
 __DEBUG__ = args['debug'] 
-'''
+"""
 
 # ********** Custom Exceptions ********** # 
 class TokenError(Exception):
@@ -173,8 +173,6 @@ class Token(NamedTuple):
 class Rules(object): 
   def __init__(self, rules:list) -> None: 
     self.__rules = self.__parse(rules) 
-
-    #if __DEBUG__: print("\u001b[1m\u001b[32mrules:", self.__rules, '\u001b[0m') 
     
   def __parse(self, rules:list) -> dict: 
     __ids = [id for id, rule in rules]
@@ -182,8 +180,6 @@ class Rules(object):
     for arg in rules: 
       id = arg[0] 
       rule = arg[1] 
-
-      #if __DEBUG__: print("\u001b[1m\u001b[31minput:", id, ':', rule, '\u001b[0m')
 
       capture = self.__capture(id, rule) 
      
@@ -214,13 +210,11 @@ class Rules(object):
         # Convert to tuple to prevent further modification 
         capture[0] = tuple(capture[0]) 
 
-        #if __DEBUG__: print("\u001b[1m\u001b[33m1a.", capture[0], '\n\t', capture[1], '\u001b[0m')    # Debug
       else: 
         capture[0] = '(?P<%s>%s)'% (id, capture[0])
-        #if __DEBUG__: print("\u001b[1m\u001b[36m1b.", capture[0], '\u001b[0m')    # Debug
+
       __ret[id] = capture[0] 
 
-      #if __DEBUG__: print("\u001b[1m\u001b[33mparse:\t->", id, capture[0], '\u001b[0m')    # Debug
     return __ret 
   
   def __iter__(self) -> Iterator: 
@@ -263,10 +257,6 @@ class Scanner(object):
     self.__lineno = 0 
     self.__scan() 
 
-    #if __DEBUG__: 
-    #  for key in self.__rules: 
-    #    print(key, ':', self.__rules[key])
-
   def __iter__(self): 
     for e in self.__tokens: 
       yield e 
@@ -285,7 +275,6 @@ class Scanner(object):
           kind = match.lastgroup
 
           self.__tokens.append(Token(kind, value, self.__lineno))
-          #print(Token(kind, value, self.__lineno)) 
 
           self.__data = re.sub(tok_regex, '', self.__data, 1)
         else: 
@@ -326,8 +315,6 @@ class Scanner(object):
         i+=1 
         continue  
 
-      #print(i, tok_regex, delim) 
-
       match = re.match(tok_regex, self.__data) 
 
       if match: 
@@ -346,7 +333,6 @@ class Scanner(object):
             not match and i+1 < len(rule) and rule[i+1][0] == '|'): 
         i+=1
         continue
-
       else: 
         return  
 
@@ -355,29 +341,3 @@ class Scanner(object):
         continue 
       i+=1 
     return True 
-'''
-# ************* Main 'Function' ************* # 
-if __name__ == "__main__":
-  data = open(__FILENAME__, 'r').read()
-  rules = [
-      ('object',
-       r'{+(%whitespace+string+whitespace+colon+whitespace+value+comma+whitespace%)+}'),
-      ('value',
-          r'whitespace+(%string|number|object|array|boolean|NULL%)+whitespace'),
-      ('string',
-          r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
-      ('array',
-          r'\[+(%whitespace+value+comma+whitespace%)+\]+whitespace'),
-      ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
-      ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
-      ('boolean', r'true|false'),
-      ('NULL', r'null'),
-      ('colon', r':'),
-      ('comma', r','),
-      ('mismatch', r'.')
-  ]
-
-  scanner = Scanner(data, rules)
-
-  for token in scanner:
-    print(token) '''
