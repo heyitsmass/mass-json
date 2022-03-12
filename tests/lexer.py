@@ -177,11 +177,75 @@ class Scanner(object):
           self.__scan(r) 
         #print(r) 
       '''
-
-
-
   def __scan(self, input): 
+    print('\t', input) 
 
+    match = True 
+    i = 0
+    while match: 
+
+      id = input[i][:-1] 
+      delim = input[i][-1] 
+      #print(id, delim) 
+
+      if id in self.__ids: 
+        tok_regex = self.__rules[id] 
+        if type(tok_regex) == tuple: 
+          self.__scan(tok_regex)
+          print(delim) 
+          if delim == '|' and i+1 < len(input): 
+            return 
+            match = True 
+            i+=1 
+            continue 
+          else:
+            raise Exception("Goodbye")
+      else: 
+        if type(id) == tuple: 
+          self.__scan(input) 
+          
+          raise Exception("Hello")
+        if '?P' in id: 
+          tok_regex = id 
+          #raise Exception  
+
+      match = re.match(tok_regex, self.__data) 
+
+      if match: 
+        kind = match.lastgroup 
+        value = match.group() 
+
+        print(Token(kind, value, self.__lineno)) 
+
+        self.__data = re.sub(tok_regex, '', self.__data, 1) 
+
+      else: 
+        #print(delim) 
+
+        if delim == '?': 
+          match = True 
+          i+=1 
+          continue 
+        elif delim == '|' and i+1 < len(input): 
+          match = True 
+          i+=1 
+          continue 
+        elif delim == '+' and i == 0: 
+          return 
+        else: 
+          print(input) 
+          print(i, len(input)) 
+          raise TokenError(id, delim) 
+      
+    
+      i+=1 
+
+      if i == len(input): 
+        return 
+
+  '''
+  def __scan(self, input): 
+    match = True 
     i = 0
     while i < len(input): 
       id = input[i][:-1] 
@@ -206,8 +270,10 @@ class Scanner(object):
         self.__scan(tok_regex)
         print("HERE 2", tok_regex) 
         if delim == '|': 
-          return 
-
+          i+=1 
+          continue 
+        elif delim == '+': 
+          return
         i+=1   
         continue  
         #return 
@@ -251,7 +317,7 @@ class Scanner(object):
 
       i+=1 
       continue 
-
+      '''
   
 
 rules = [
