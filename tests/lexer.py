@@ -136,47 +136,7 @@ class Scanner(object):
 
         self.__scan(arg) 
 
-    '''
-    for r in default: 
-        if type(r) == str: 
-          delim = r[-1:] 
-          rule = r[:-1]
-          if delim not in ['|', '?', '+']: 
-            raise DelimiterError(delim) 
 
-          if rule not in self.__ids:  # rule is a regex pattern 
-            tok_regex = rule 
-            match = re.match(tok_regex, self.__data) 
-
-          else:     # rule is some placeholder value 
-            
-            tok_regex = self.__rules[rule] 
-            match = re.match(tok_regex, self.__data) 
-
-            print(tok_regex) 
-            ...  
-
-          if match:                 # found a match 
-            kind = match.group() 
-            value = match.lastgroup 
-
-            print(Token(kind, value, self.__lineno)) 
-            self.__data = re.sub(tok_regex, '', self.__data, 1) 
-
-          elif not match:         
-            if delim == '+':        # if not match and required, file has a grammatical error 
-              raise TokenError(tok_regex, delim) 
-            elif delim == '?':      # if not match and not required, skip 
-              continue 
-            elif delim == '|':      # if not match and or, then if not match is found by the last or, then raise an exception (wip) 
-              raise Exception   
-            
-            print(tok_regex) 
-
-        elif type(r) == tuple: 
-          self.__scan(r) 
-        #print(r) 
-      '''
   def __scan(self, input): 
     print('\t', input) 
 
@@ -238,87 +198,11 @@ class Scanner(object):
           raise TokenError(id, delim) 
       
     
+    
       i+=1 
 
       if i == len(input): 
         return 
-
-  '''
-  def __scan(self, input): 
-    match = True 
-    i = 0
-    while i < len(input): 
-      id = input[i][:-1] 
-      delim = input[i][-1] 
-
-      if id not in self.__ids: 
-        print(id) 
-        if type(id) == tuple: 
-          self.__scan(id)
-          print("HERE 1", tok_regex) 
-          return 
-
-          i+=1 
-          continue 
-        if '?P' in id: 
-          tok_regex = id 
-      else: 
-
-        tok_regex = self.__rules[id]
-        
-      if type(tok_regex) == tuple: 
-        self.__scan(tok_regex)
-        print("HERE 2", tok_regex) 
-        if delim == '|': 
-          i+=1 
-          continue 
-        elif delim == '+': 
-          return
-        i+=1   
-        continue  
-        #return 
-
-      match = re.match(tok_regex, self.__data) 
-
-      if match: 
-        value = match.group() 
-        kind = match.lastgroup 
-
-        print(Token(kind, value, self.__lineno)) 
-
-        self.__data = re.sub(tok_regex, '', self.__data, 1)
-
-        print(delim)
-        if delim == '|': 
-          return  
-
-      elif not match: 
-        if delim == '?':
-          #match = True 
-          i+=1 
-          continue
-
-        if delim == '|' and i+1 >= len(input): 
-          raise TokenError(id, delim)
-        elif delim == '|': 
-          i+=1 
-          continue 
-
-        raise TokenError(id, delim) 
-
-      else: 
-
-        raise Exception 
-
-      if i+1 >= len(input) and match: 
-        i=0 
-        continue 
-
-
-      i+=1 
-      continue 
-      '''
-  
 
 rules = [
     ('object',
