@@ -1,5 +1,4 @@
 import argparse
-from turtle import pos
 
 '''
   object ending cannot be after a comma 
@@ -19,7 +18,7 @@ __FILENAME__ = args['filename']
 
 rules = [
     ('object',
-     r'\{+:=whitespace?,string?,whitespace?,colon?,whitespace?,value+,comma?,whitespace?=:?\}+'),
+     r'\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,comma?,whitespace?=:?\}+'),
     ('value',
         r'whitespace?:=string|,number|,object|,array|,boolean|,_null|=:?whitespace?'),
     ('string',
@@ -122,6 +121,15 @@ class Rules(object):
     return self.__rules.items()
 
 
+class UnknownTypeError(Exception): 
+  def __init__(self, type, rule): 
+    self.type = type 
+    self.rule = rule 
+  
+  def __str__(self): 
+    return "Exception; Unknown type '%s' within rule:\n\t%s"% (self.type, str(self.rule)) 
+
+
 class Scanner(object): 
   def __init__(self, filename, rules):
     # Parse the inputted rules 
@@ -139,12 +147,11 @@ class Scanner(object):
     for e in self.tokens: 
       yield e 
 
-  def __scan(self, input): 
-    for i, arg in enumerate(input): 
-      # select the rule
-      rule = arg[:-1]
-      # select the delimiter 
-      delim = arg[-1] 
+  def __scan(self, input, _delim=None):
+   
+
+    '''
+      
       # raise an error if the delimiter is not in the allowed delimiter range 
       if delim not in ['|', '?', '+']: 
         raise DelimiterError(delim) 
@@ -198,20 +205,32 @@ class Scanner(object):
             continue 
           elif delim == '|' and i+1 <= len(input): 
             continue 
-          elif delim == '+' and i == 0: 
+          elif delim == '+' and i <= 1: 
+            
             return 
           # Output the errored rule 
           raise MissingTokenError(rule) 
     # While there's a match, continue searching for the required input 
     if match: 
       self.__scan(input) 
-
+    '''
 
 scanner = Scanner(__FILENAME__, rules)
 
-
+prev = None 
 for t in scanner:
 
-  print(t) 
+  if t.type != 'whitespace': 
+
+    print(t, '\n\t', prev) 
+    if (prev and prev.type == 'comma' and t.value in ['}', ']'] or
+        prev and prev.value in ['{', '['] and t.type == 'comma' or
+        prev and prev.type == 'colon' and t.type == 'comma'):
+      
+      raise Exception 
+
+       
+    prev = t 
+  
 
 
