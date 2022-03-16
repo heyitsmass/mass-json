@@ -69,7 +69,8 @@ class ParseError(Exception):
 
 class Token(NamedTuple): 
   type:str 
-  value:str 
+  value:str
+  line:int
 
 
 class Rules(object): 
@@ -136,8 +137,12 @@ class Scanner(object):
 
     self.ids = [id for id in self.rules] 
 
+    self.__lineno = 0
+
 
     self.__scan(self.rules[list(self.rules.keys())[0]])
+
+    print(self.ids[0]) 
 
   def __scan(self, input, _delim=None): 
 
@@ -148,7 +153,6 @@ class Scanner(object):
 
       if rule not in self.ids: 
         if '?P' in rule: 
-          #print(i, rule, delim) 
           tok_regex = rule 
         elif type(rule) == tuple: 
 
@@ -159,10 +163,13 @@ class Scanner(object):
             continue
           elif _delim == '|' and not match or not _delim: 
             continue 
+          
+          print(i, rule, delim, input, _delim) 
+          raise MissingTokenError(rule)  
+        else: 
+          return 
+          raise UnknownTypeError(type(rule), rule) 
 
-          #print(rule, delim, input, input[i+1]) 
-          raise Exception('A', i, rule, delim, _delim, input[i], match) 
-          #print(i, rule) 
       elif rule in self.ids: 
         tok_regex = self.rules[rule] 
       else: 
@@ -180,19 +187,25 @@ class Scanner(object):
         elif delim == '|' and not match: 
           continue 
 
-        print(rule, delim, input, input[i+1])
-        raise Exception('B', match)
+        print(i, rule, delim, input, _delim) 
+        raise MissingTokenError(rule) 
 
       if match: 
         kind = match.lastgroup 
         value = match.group() 
 
-        print(Token(kind, value)) 
+        if kind != 'whitespace': 
+          self.tokens.append(Token(kind, value, self.__lineno))
+          #print(Token(kind, value, self.__lineno)) 
+        elif kind == 'whitespace' and '\n' in value: 
+          self.__lineno += 1
 
         self.data = re.sub(tok_regex, '', self.data, 1) 
 
         if delim == '|': 
           return match
+
+
 
       else: 
         if delim == '?': 
@@ -206,16 +219,22 @@ class Scanner(object):
         elif _delim in ['?']: 
           return match 
         else: 
+          print(i, rule, delim, input, _delim, tok_regex) 
           raise MissingTokenError(rule) 
 
     if match: 
       match = self.__scan(input, delim) 
       return match  
+  
+  def __iter__(self): 
+    for e in self.tokens: 
+      yield e 
+
 
 if __name__ == '__main__': 
   rules = [
-
-      ('object', r'\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,whitespace?,comma?,whitespace?=:|\}+'),
+      ('json', r':=object|,array|=:+'),
+      ('object', r'\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,whitespace?,comma?,whitespace?=:+\}+'),
       ('value', r'whitespace?:=string|,number|,object|,array|,boolean|,_null|=:?whitespace?'), 
       ('array', r'\[+:=whitespace?,value+,comma?,whitespace?=:?\]+'),   
       ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
@@ -231,3 +250,6 @@ if __name__ == '__main__':
   data = open('sample.json', 'r').read() 
 
   scanner = Scanner(rules, data) 
+
+for token in scanner: 
+  print(token) 
