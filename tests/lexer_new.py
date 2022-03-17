@@ -76,6 +76,26 @@ class Rules(object):
     return self.rules.items() 
 
 
+class TempError(Exception): 
+  def __init__(self, input, rule, match, delim, tok_regex=None, parent_delim = None): 
+    self.input = str(input) 
+    self.rule = str(rule) 
+    self.tok_regex = str(tok_regex)
+    self.match = str(match)
+    self.delim = str(delim) 
+    self.parent_delim = str(parent_delim) 
+
+  def __str__(self): 
+    return (("\n\tinput=%s\n\trule=%s\n\ttok_regex=%s\n\tmatch=%s\n\tdelim=%s\n\tparent_delim=%s") % 
+            (self.input, self.rule, self.tok_regex, self.match, self.delim, self.parent_delim))
+
+from typing import NamedTuple
+
+class Token(NamedTuple): 
+  type:str 
+  value:str 
+
+
 
 class Scanner(object): 
   def __init__(self, data, rules): 
@@ -84,95 +104,120 @@ class Scanner(object):
     self.ids = [id for id in self.rules]
 
     self.default = self.rules[self.ids[0]][:-1]
-    self.delim = self.rules[self.ids[0]][-1] 
+    self.delim = self.rules[self.ids[0]][-1]
 
+    self.tokens=list() 
 
     self.__scan(self.default, self.delim) 
 
-  def __scan(self, input, _delim=None): 
-    
-    or_var = None 
-    match = None 
+
+
+  def __scan(self, input, parent_delim=None): 
 
     i = 0
     while i < len(input): 
-      rule = input[i][:-1]
+      
+      rule = input[i][:-1] 
       delim = input[i][-1] 
 
-      #print(rule, delim) 
-
       if rule in self.ids: 
-        tok_regex = self.rules[rule]
-        if type(tok_regex) == tuple: 
+        #print(rule, delim) 
+        tok_regex = self.rules[rule] 
+
+        if type(tok_regex) == tuple:
           match = self.__scan(tok_regex, delim)
-          if match: 
-            if i+1 < len(input): 
-              i += 1 
-            else: 
-              i = 0
-            continue 
-          #print(input[i+1]) 
-          raise Exception(tok_regex, match, input, delim) 
+
+          if (not match and delim == '|' and i+1 < len(input) or 
+              not match and delim == '+' and parent_delim == '?' or 
+              match and delim == '+'): 
+            i+=1 
+            continue
+
+          elif match and delim == '|' and parent_delim in ['+', '?']: 
+            return match 
+          
+          raise TempError(input, rule, match, delim, tok_regex, parent_delim)
+
       else: 
         if '?P' in rule: 
           tok_regex = rule 
         elif type(rule) == tuple: 
           match = self.__scan(rule, delim)
+          if (not match and delim == '?' or 
+              not match and delim == '|' and i+1 < len(input)): 
+            i+=1 
+            continue
 
-          if match and delim == '?': 
-
-            #print(delim) 
-
+          elif match: 
             return match 
-          
-          
 
-          raise Exception(input[i], rule, delim, match) 
+          raise TempError(input, rule, match, delim, tok_regex, parent_delim) 
 
-      
-
+        
       match = re.match(tok_regex, self.data) 
 
-    
       if match: 
-        print(match) 
+        
+
+        kind = match.lastgroup 
+        value = match.group() 
+        #print(Token(kind, value)) 
+
+        if len(self.tokens) > 0: 
+
+          if self.tokens[-1].type == 'comma' and value == '}': 
+            return None         
+
+        if kind != 'whitespace': 
+          self.tokens.append(Token(kind, value))
 
         self.data = re.sub(tok_regex, '', self.data, 1) 
 
-        if delim == '|': 
-          return match 
-        
-      else: 
-        if delim == '+': 
-          raise Exception(tok_regex, delim) 
-        elif delim == '?': 
-          i+=1
-          continue 
-        elif delim == '|':
-          if i+1 >= len(input): 
-            raise Exception("Unable to find or variable")
-          else: 
-            i+=1
-            continue  
+        if delim == '|' or delim == '|' and parent_delim != '?': 
+          return match
 
-        raise Exception(input, rule, delim, i) 
-      
-      if match and i+1 >= len(input):
+      elif not match: 
+
+
+        if (delim == '+' and parent_delim in ['|', '?'] or 
+            delim == '|' and i+1 >= len(input) and parent_delim == '?'): 
+        
+          return match 
+
+        
+        if (delim == '?' or 
+            delim == '|' and i+1 < len(input)):
+
+          '''
+          if delim == '?' and i+1 >= len(input) and parent_delim == '?': 
+          print(rule, delim, parent_delim, i, i+1) 
+          #return match 
+          i = 0
+          continue
+          raise TempError(input, rule, match, delim, tok_regex, parent_delim)'''
+
+          i+=1 
+          continue 
+
+        raise TempError(input, rule, match, delim, tok_regex, parent_delim)
+
+      if i+1 >= len(input) and match and len(self.data) > 0: 
         i = 0
-        continue 
+        continue  
 
       i+=1 
-      #print(rule, i) 
+    return match 
 
-    return 
-
+  def __iter__(self): 
+    for e in self.tokens: 
+      yield e 
 
 
 
 if __name__ == '__main__': 
   rule_set = [ 
     ('json', r':=object|,array|=:+'),
-    ('object', r'\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,whitespace?,comma?,whitespace?=:?\}+'),
+    ('object', r'\{+:=whitespace?,string+,whitespace?,colon+,whitespace?,value+,whitespace?,comma+,whitespace?=:?\}+'),
     ('value', r'whitespace?:=string|,number|,object|,array|,boolean|,_null|=:?whitespace?'),
     ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
     ('array', r'\[+:=whitespace?,value+,comma?,whitespace?=:?\]+'),
@@ -186,3 +231,8 @@ if __name__ == '__main__':
   ]
 
   scanner = Scanner(open('sample.json', 'r').read(), rule_set) 
+
+  print("Scan Done") 
+
+  for token in scanner: 
+    print(token) 
