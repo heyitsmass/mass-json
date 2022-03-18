@@ -153,7 +153,8 @@ class Scanner(object):
         
 
         kind = match.lastgroup 
-        value = match.group()
+        value = match.group() 
+        #print(Token(kind, value)) 
 
         if len(self.tokens) > 0: 
 
@@ -173,11 +174,20 @@ class Scanner(object):
 
         if (delim == '+' and parent_delim in ['|', '?'] or 
             delim == '|' and i+1 >= len(input) and parent_delim == '?'): 
+        
           return match 
 
         
         if (delim == '?' or 
             delim == '|' and i+1 < len(input)):
+
+          '''
+          if delim == '?' and i+1 >= len(input) and parent_delim == '?': 
+          print(rule, delim, parent_delim, i, i+1) 
+          #return match 
+          i = 0
+          continue
+          raise TempError(input, rule, match, delim, tok_regex, parent_delim)'''
 
           i+=1 
           continue 
