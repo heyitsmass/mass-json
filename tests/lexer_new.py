@@ -9,7 +9,6 @@ args.add_argument('filename', metavar='filename',
 args = vars(args.parse_args())
 __FILENAME__ = args['filename'] 
 
-
 class Rules(object): 
   def __init__(self, rules): 
     # Initialize a dictionary to hold the parsed rules 
@@ -99,15 +98,17 @@ class Rules(object):
     return self.rules.items() 
 
 class RuleError(Exception): 
-  def __init__(self, parent, parent_delim, child, child_delim): 
+  def __init__(self, parent, parent_delim, child, child_delim, tok_regex=None, match=None): 
     self.parent = parent 
     self.p_delim = parent_delim 
     self.child = child 
     self.c_delim = child_delim 
+    self.tok_regex = tok_regex 
+    self.match = match 
 
   def __str__(self): 
-    return ("Error:\n\tparent= %s\n\tparent_delim= %s\n\trule= %s\n\tdelim= %s"%
-            (self.parent, self.p_delim, self.child, self.c_delim)) 
+    return ("Error:\n\tparent= %s\n\tparent_delim= %s\n\trule= %s\n\tdelim= %s\n\ttok_regex= %s\n\tmatch= %s"%
+            (self.parent, self.p_delim, self.child, self.c_delim, self.tok_regex, self.match)) 
           
 
 class Scanner(object): 
@@ -128,23 +129,62 @@ class Scanner(object):
       delim = input[i][-1] 
 
       if type(rule) == tuple: 
-        match = self.__scan(rule) 
+        match = self.__scan(rule, delim) 
 
         if not match and delim == '!': 
           i+=1 
           continue 
+        elif match and delim == '!': 
+          return match 
 
         
-        raise RuleError(input, parent_delim, rule, delim) 
+        raise RuleError(input, parent_delim, rule, delim, None, match) 
       else: 
-        if '?P' in rule: 
-          raise RuleError(input, parent_delim, rule, delim) 
+        if '?P' in rule:
+          tok_regex = rule 
+          #raise RuleError(input, parent_delim, rule, delim) 
         elif rule in self.ids: 
           tok_regex = self.rules[rule] 
+          if type(tok_regex) == tuple: 
+            match = self.__scan(self.rules[rule], delim)
+            if match and parent_delim == '!': 
+              i+=1 
+              continue
+
+            if not match and delim == '|' and i < len(input): 
+              i+=1 
+              continue 
+
+
+            raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
         else: 
           raise RuleError(input, parent_delim, rule, delim)
 
+      
+      match = re.match(tok_regex, self.data) 
+
       print(rule, delim, tok_regex) 
+
+      if match: 
+
+        print(match, delim, parent_delim) 
+
+        self.data = re.sub(tok_regex, '', self.data, 1) 
+
+        if delim == '|': 
+          return match 
+      
+      else: 
+        if delim == '?' or delim == '|' and i < len(input): 
+          i+=1 
+          continue 
+        if delim == '+' and parent_delim in ['!', '|']: 
+          return match 
+
+        raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
+
+      if match: 
+        print(match, len(input), i+1) 
 
       i+=1 
 
