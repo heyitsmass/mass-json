@@ -130,13 +130,15 @@ class Scanner(object):
 
       if type(rule) == tuple: 
         match = self.__scan(rule, delim) 
-
-        if not match and delim == '!': 
-          i+=1 
-          continue 
-        elif match and delim == '!': 
+        if match and delim == '!' and parent_delim == '+': 
           return match 
+        
+        if match:
+          
+          i+=1
+          continue 
 
+        print(input[i+1]) 
         
         raise RuleError(input, parent_delim, rule, delim, None, match) 
       else: 
@@ -147,14 +149,9 @@ class Scanner(object):
           tok_regex = self.rules[rule] 
           if type(tok_regex) == tuple: 
             match = self.__scan(self.rules[rule], delim)
-            if match and parent_delim == '!': 
-              i+=1 
-              continue
-
-            if not match and delim == '|' and i < len(input): 
-              i+=1 
+            if match and delim == '+' and parent_delim == '!': 
+              i+=1
               continue 
-
 
             raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
         else: 
@@ -163,27 +160,28 @@ class Scanner(object):
       
       match = re.match(tok_regex, self.data) 
 
-      print(rule, delim, tok_regex) 
+      #print(rule, delim, tok_regex) 
 
       if match: 
 
-        print(match, delim, parent_delim) 
+        print(match, delim, input, parent_delim) 
 
         self.data = re.sub(tok_regex, '', self.data, 1) 
 
-        if delim == '|': 
+        if delim == '+' and parent_delim == '!':
+          return match  
+
+        if delim in ['|']: 
           return match 
       
       else: 
         if delim == '?' or delim == '|' and i < len(input): 
           i+=1 
           continue 
-        if delim == '+' and parent_delim in ['!', '|']: 
-          return match 
 
         raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
 
-      if match: 
+      if match and i+1 >= len(input): 
         print(match, len(input), i+1) 
 
       i+=1 
@@ -194,7 +192,7 @@ class Scanner(object):
 
 rule_set = [ 
   ('json', r'whitespace?:=object|array=:!whitespace?'),
-  ('object', r'\{+:=whitespace?string+whitespace?colon+whitespace?value+whitespace?colon+whitespace?=:!+\}'),
+  ('object', r'\{+:=whitespace?string+whitespace?colon+whitespace?value+whitespace?colon+whitespace?comma+whitespace?=:!+\}'),
   ('value', r'whitespace?:=string|number|object|array|boolean|_null=:!whitespace?'), 
   ('array', r'\[+:=whitespace?value+comma=:!+\]'),
   ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
