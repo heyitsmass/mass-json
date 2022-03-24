@@ -1,4 +1,4 @@
-from os import P_ALL
+
 import re 
 import argparse
 from typing import NamedTuple 
@@ -120,6 +120,13 @@ class UnknownTokenError(Exception):
     return ("\n\tinput= %s\n\tdelim= %s\n\tmatch= %s\n\tnext= %s\n\tprev_delim= %s\n\tprev_match= %s" %
             (self.input, self.delim, self.match, self.next, self.prev_delim, self.prev_match)) 
 
+class MissingTokenError(Exception): 
+  def __init__(self, rule): 
+    self.rule = rule 
+
+  def __str__(self): 
+    return "\n\tError, missing token: '%s'" % self.rule 
+
 
 
 class Scanner(object): 
@@ -141,31 +148,34 @@ class Scanner(object):
           return self.__scan(tok_regex, delim, next, prev_delim, prev_match)
     else:
       for i, arg in enumerate(rule):
-        if i+1 < len(rule): 
-          next = rule[i+1]
-        match = self.__scan(arg[:-1], arg[-1], next, delim, prev_match)
+        next = rule[i+1] if i+1 < len(rule) else None 
+        tmp_rule = arg[:-1]
+        tmp_delim = arg[-1] 
 
-        if match:
-          prev_match = match  
-          if arg[-1] in ['+', '?', '*']: 
+        match = self.__scan(tmp_rule, tmp_delim, next, delim, prev_match)
+        if match: 
+          prev_match = match 
+          if tmp_delim in ['+', '*']: 
             continue 
-          if arg[-1] == '|' and prev_delim == '+' and delim == '!': 
-            return match 
-          if delim == '+' and arg[-1] == '!': 
-            return match 
-          if arg[-1] == '!': 
+          if tmp_delim == '?': 
             continue 
-          if arg[-1] == '|': 
+          if tmp_delim == '|': 
             return match 
-          raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
+          if tmp_delim == '!' and prev_delim == '!': 
+            return match 
+
         else: 
-          if arg[-1] == '?': 
+          if tmp_delim == '?': 
+            continue
+          if tmp_delim == '|' and next: 
             continue 
-          if arg[-1] == '|' and next: 
+          if tmp_delim == '*' and prev_match: 
+            return match  
+          if tmp_delim == '!' and prev_delim == '!': 
             continue 
-          if arg[-1] == '+' and delim == '|': 
+          if tmp_delim == '+' and delim == '|' and prev_delim == '!': 
             return match 
-        raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
+        raise UnknownTokenError(tmp_rule, tmp_delim, match, next, prev_delim, prev_match)
       
       if match and delim == '!': 
         return self.__scan(rule, delim, next, prev_delim, match) 
@@ -177,28 +187,24 @@ class Scanner(object):
     
     if match: 
       prev_match = match 
-      print(Token(match.lastgroup, match.group()))
+      print(Token(match.lastgroup, match.group()), delim, prev_delim)
       self.data = re.sub(tok_regex, '', self.data, 1) 
 
     else: 
       if delim == '?': 
-        return match 
-      
+        return match
       if delim == '|' and next: 
+        return match  
+      if delim == '*' and prev_match: 
         return match 
-
-      if delim == '*': 
-        return prev_match 
-
       if delim == '+' and prev_delim == '|': 
         return match 
-
-      if delim == '+' and prev_delim == '!': 
-        return prev_match 
-
+      if prev_delim == '!': 
+        return match 
+      #raise MissingTokenError(rule) 
       raise UnknownTokenError(rule, delim, match, next, prev_delim, prev_match)
 
-    return prev_match 
+    return match  
 
     
     
@@ -226,3 +232,83 @@ rule_set = [
 
 scanner = Scanner(open(__FILENAME__).read(), rule_set)
 
+
+
+"""
+def __scan(self, rule, delim=None, next=None, prev_delim=None, prev_match=None):
+    if type(rule) != tuple: 
+      if '?P' in rule: 
+        tok_regex = rule
+      elif rule in self.ids: 
+        tok_regex = self.rules[rule] 
+        if type(tok_regex) == tuple: 
+          return self.__scan(tok_regex, delim, next, prev_delim, prev_match)
+    else:
+      for i, arg in enumerate(rule):
+        if i+1 < len(rule): 
+          next = rule[i+1]
+        else: 
+          next = None
+        match = self.__scan(arg[:-1], arg[-1], next, delim, prev_match)
+        '''
+        if match:
+          prev_match = match  
+          if arg[-1] in ['+', '?', '*']: 
+            continue 
+          if arg[-1] == '|' and prev_delim == '+' and delim == '!': 
+            return match 
+          if delim == '+' and arg[-1] == '!': 
+            return match 
+          if arg[-1] == '!': 
+            continue 
+          if arg[-1] == '|': 
+            return match 
+          raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
+        else: 
+          if arg[-1] == '?': 
+            continue 
+          if arg[-1] == '|' and next: 
+            continue 
+          if arg[-1] == '+' and delim == '|': 
+            return match 
+        print(rule, delim, prev_delim, prev_match)'''
+        raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
+      
+      if match and delim == '!': 
+        return self.__scan(rule, delim, next, prev_delim, match) 
+
+
+      return prev_match 
+
+    match = re.match(tok_regex, self.data) 
+    
+    if match: 
+      prev_match = match 
+      print(Token(match.lastgroup, match.group()), delim, prev_delim)
+      self.data = re.sub(tok_regex, '', self.data, 1) 
+
+    else: 
+      
+      '''
+      if delim == '?': 
+        return match 
+      
+      if delim == '|' and next:
+        return match 
+
+      if delim == '*':
+        return prev_match 
+
+      if delim == '+' and prev_delim == '|': 
+        #print(prev_match, match) 
+        if prev_match: 
+          print(rule, delim, next) 
+        return match 
+
+      if delim == '|' and prev_delim == '!': 
+        return prev_match 
+      '''
+
+      raise UnknownTokenError(rule, delim, match, next, prev_delim, prev_match)
+
+    return prev_match """
