@@ -59,6 +59,7 @@
     {
       "createdDate": "2017-09-15",
       "updatedDate": "2017-09-15",
+      "something":123,
       "administrativeContact": {
         "organization": "someOrganization Inc.", 
         "email": "someemail@gmail.com",

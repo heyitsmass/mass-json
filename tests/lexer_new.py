@@ -1,5 +1,7 @@
+from os import P_ALL
 import re 
-import argparse 
+import argparse
+from typing import NamedTuple 
 
 
 args = argparse.ArgumentParser(
@@ -27,7 +29,7 @@ class Rules(object):
           # If the arg is the start of a repeatable statement 
           if arg == ':=':
             # Split the list of arguments and capture its delimiter 
-            rule[i+1] = re.split(r'([+|?])', rule[i+1]) 
+            rule[i+1] = re.split(r'([+|?*])', rule[i+1]) 
             # Iterate through the captured arguments 
             for j in range(len(rule[i+1])): 
               # If the current place is within the captured argument list 
@@ -37,7 +39,9 @@ class Rules(object):
                 # Remove the delimiter from the captured arguments 
                 rule[i+1].remove(rule[i+1][j+1]) 
               # Check if there's any arguments without a delimiter following  
-              if j == len(rule[i+1])-1 and rule[i+1][j] != '' and rule[i+1][j-1][-1] in ['|', '+']: 
+              if j == len(rule[i+1])-1 and rule[i+1][j] != '' and rule[i+1][j-1][-1] in ['|', '+', '*']: 
+                if rule[i+1][j-1][-1] == '*': 
+                  raise Exception("Incorrectly formatted rule '%s'"% (id), rule) 
                 # If there is then concantenate the delimiter from the previous argument
                 rule[i+1][j] += rule[i+1][j-1][-1]
             # remove the repeatable statement beginning delimiter 
@@ -60,7 +64,7 @@ class Rules(object):
               continue 
             elif len(arg) <= 0: 
               raise Exception("Incorrectly formatted rule '%s'"% (id), rule)
-            if arg[0] in ['?', '+', '|']: 
+            if arg[0] in ['?', '+', '|', '*']: 
               # If there is and the id is in the placeholder, 
               # then append it to the end and remove it front the beginning
               if arg[1:len(arg)] in ids: 
@@ -97,19 +101,26 @@ class Rules(object):
   def items(self): 
     return self.rules.items() 
 
-class RuleError(Exception): 
-  def __init__(self, parent, parent_delim, child, child_delim, tok_regex=None, match=None): 
-    self.parent = parent 
-    self.p_delim = parent_delim 
-    self.child = child 
-    self.c_delim = child_delim 
-    self.tok_regex = tok_regex 
+
+class Token(NamedTuple): 
+  type:str 
+  value:str
+
+
+class UnknownTokenError(Exception): 
+  def __init__(self, input, delim, match, next, prev_delim, prev_match): 
+    self.input = input 
+    self.delim = delim 
     self.match = match 
+    self.next = next
+    self.prev_delim = prev_delim
+    self.prev_match = prev_match 
 
   def __str__(self): 
-    return ("Error:\n\tparent= %s\n\tparent_delim= %s\n\trule= %s\n\tdelim= %s\n\ttok_regex= %s\n\tmatch= %s"%
-            (self.parent, self.p_delim, self.child, self.c_delim, self.tok_regex, self.match)) 
-          
+    return ("\n\tinput= %s\n\tdelim= %s\n\tmatch= %s\n\tnext= %s\n\tprev_delim= %s\n\tprev_match= %s" %
+            (self.input, self.delim, self.match, self.next, self.prev_delim, self.prev_match)) 
+
+
 
 class Scanner(object): 
   def __init__(self, data, rules): 
@@ -120,81 +131,87 @@ class Scanner(object):
 
     self.__scan(self.rules[self.ids[0]]) 
 
-  def __scan(self, input, parent_delim=None): 
-    match = None
+  def __scan(self, rule, delim=None, next=None, prev_delim=None, prev_match=None):
+    if type(rule) != tuple: 
+      if '?P' in rule: 
+        tok_regex = rule
+      elif rule in self.ids: 
+        tok_regex = self.rules[rule] 
+        if type(tok_regex) == tuple: 
+          return self.__scan(tok_regex, delim, next, prev_delim, prev_match)
+    else:
+      for i, arg in enumerate(rule):
+        if i+1 < len(rule): 
+          next = rule[i+1]
+        match = self.__scan(arg[:-1], arg[-1], next, delim, prev_match)
 
-    i=0 
-    while i < len(input): 
-      rule = input[i][:-1] 
-      delim = input[i][-1] 
-
-      if type(rule) == tuple: 
-        match = self.__scan(rule, delim) 
-        if match and delim == '!' and parent_delim == '+': 
-          return match 
-        
         if match:
-          
-          i+=1
-          continue 
-
-        print(input[i+1]) 
-        
-        raise RuleError(input, parent_delim, rule, delim, None, match) 
-      else: 
-        if '?P' in rule:
-          tok_regex = rule 
-          #raise RuleError(input, parent_delim, rule, delim) 
-        elif rule in self.ids: 
-          tok_regex = self.rules[rule] 
-          if type(tok_regex) == tuple: 
-            match = self.__scan(self.rules[rule], delim)
-            if match and delim == '+' and parent_delim == '!': 
-              i+=1
-              continue 
-
-            raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
+          prev_match = match  
+          if arg[-1] in ['+', '?', '*']: 
+            continue 
+          if arg[-1] == '|' and prev_delim == '+' and delim == '!': 
+            return match 
+          if delim == '+' and arg[-1] == '!': 
+            return match 
+          if arg[-1] == '!': 
+            continue 
+          if arg[-1] == '|': 
+            return match 
+          raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
         else: 
-          raise RuleError(input, parent_delim, rule, delim)
-
+          if arg[-1] == '?': 
+            continue 
+          if arg[-1] == '|' and next: 
+            continue 
+          if arg[-1] == '+' and delim == '|': 
+            return match 
+        raise UnknownTokenError(arg[:-1], arg[-1], match, next, prev_delim, prev_match)
       
-      match = re.match(tok_regex, self.data) 
+      if match and delim == '!': 
+        return self.__scan(rule, delim, next, prev_delim, match) 
 
-      #print(rule, delim, tok_regex) 
 
-      if match: 
+      return prev_match 
 
-        print(match, delim, input, parent_delim) 
+    match = re.match(tok_regex, self.data) 
+    
+    if match: 
+      prev_match = match 
+      print(Token(match.lastgroup, match.group()))
+      self.data = re.sub(tok_regex, '', self.data, 1) 
 
-        self.data = re.sub(tok_regex, '', self.data, 1) 
-
-        if delim == '+' and parent_delim == '!':
-          return match  
-
-        if delim in ['|']: 
-          return match 
+    else: 
+      if delim == '?': 
+        return match 
       
-      else: 
-        if delim == '?' or delim == '|' and i < len(input): 
-          i+=1 
-          continue 
+      if delim == '|' and next: 
+        return match 
 
-        raise RuleError(input, parent_delim, rule, delim, tok_regex, match)
+      if delim == '*': 
+        return prev_match 
 
-      if match and i+1 >= len(input): 
-        print(match, len(input), i+1) 
+      if delim == '+' and prev_delim == '|': 
+        return match 
 
-      i+=1 
+      if delim == '+' and prev_delim == '!': 
+        return prev_match 
 
-    return match 
+      raise UnknownTokenError(rule, delim, match, next, prev_delim, prev_match)
+
+    return prev_match 
+
+    
+    
+    
+
 
 
 
 rule_set = [ 
   ('json', r'whitespace?:=object|array=:!whitespace?'),
-  ('object', r'\{+:=whitespace?string+whitespace?colon+whitespace?value+whitespace?colon+whitespace?comma+whitespace?=:!+\}'),
+  ('object', r'\{+:=whitespace?string+whitespace?colon+whitespace?value+whitespace?comma*whitespace?=:!+\}'),
   ('value', r'whitespace?:=string|number|object|array|boolean|_null=:!whitespace?'), 
-  ('array', r'\[+:=whitespace?value+comma=:!+\]'),
+  ('array', r'\[+:=whitespace?value+comma*whitespace?=:!+\]'),
   ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
   ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
   ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
@@ -202,7 +219,7 @@ rule_set = [
   ('_null', r'null'),
   ('colon', r':'),
   ('comma', r','),
-  #('mismatch', r'.')
+  ('mismatch', r'.')
 ]
 
 
