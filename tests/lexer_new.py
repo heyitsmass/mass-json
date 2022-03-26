@@ -106,19 +106,19 @@ class Token(NamedTuple):
   type:str 
   value:str
 
-
-class UnknownTokenError(Exception): 
-  def __init__(self, input, delim, match, next, prev_delim, prev_match): 
-    self.input = input 
+class MissingInfo(Exception): 
+  def __init__(self, rule, delim, match, next, prev_delim, prev_match): 
+    self.rule = rule 
     self.delim = delim 
     self.match = match 
-    self.next = next
-    self.prev_delim = prev_delim
+    self.next = next 
+    self.prev_delim = prev_delim 
     self.prev_match = prev_match 
 
   def __str__(self): 
-    return ("\n\tinput= %s\n\tdelim= %s\n\tmatch= %s\n\tnext= %s\n\tprev_delim= %s\n\tprev_match= %s" %
-            (self.input, self.delim, self.match, self.next, self.prev_delim, self.prev_match)) 
+    return (("\n\trule= %s\n\t delim= %s\n\t match= %s\n\tnext= %s\n\tprev_delim= %s\n\tprev_match= %s\n\t") % 
+           (self.rule, self.delim, self.match, self.next, self.prev_delim, self.prev_match))  
+
 
 class MissingTokenError(Exception): 
   def __init__(self, rule): 
@@ -126,7 +126,6 @@ class MissingTokenError(Exception):
 
   def __str__(self): 
     return "\n\tError, missing token: '%s'" % self.rule 
-
 
 
 class Scanner(object): 
@@ -153,64 +152,31 @@ class Scanner(object):
         tmp_delim = arg[-1] 
 
         match = self.__scan(tmp_rule, tmp_delim, next, delim, prev_match)
+
         if match: 
           prev_match = match 
-          if tmp_delim in ['+', '*']: 
-            continue 
-          if tmp_delim == '?': 
-            continue 
-          if tmp_delim == '|': 
+          value = match.group() 
+          kind = match.lastgroup 
+          print(Token(kind, value), tmp_delim, delim, prev_delim) 
+          self.data = re.sub(value, '', self.data, 1) 
+
+          if delim == '|': 
             return match 
-          if tmp_delim == '!' and prev_delim == '!': 
-            return match 
+          
+          raise Exception 
 
         else: 
           if tmp_delim == '?': 
-            continue
-          if tmp_delim == '|' and next: 
-            continue 
-          if tmp_delim == '*' and prev_match: 
-            return match  
-          if tmp_delim == '!' and prev_delim == '!': 
-            continue 
-          if tmp_delim == '+' and delim == '|' and prev_delim == '!': 
-            return match 
-        raise UnknownTokenError(tmp_rule, tmp_delim, match, next, prev_delim, prev_match)
-      
-      if match and delim == '!': 
-        return self.__scan(rule, delim, next, prev_delim, match) 
+            continue  
 
+          
+          
+          raise MissingInfo(rule, delim, match, next, prev_delim, prev_match)
 
-      return prev_match 
+      #if match and delim == '!': 
+        #return self.__scan(rule, delim, next, prev_delim, match)
 
-    match = re.match(tok_regex, self.data) 
-    
-    if match: 
-      prev_match = match 
-      print(Token(match.lastgroup, match.group()), delim, prev_delim)
-      self.data = re.sub(tok_regex, '', self.data, 1) 
-
-    else: 
-      if delim == '?': 
-        return match
-      if delim == '|' and next: 
-        return match  
-      if delim == '*' and prev_match: 
-        return match 
-      if delim == '+' and prev_delim == '|': 
-        return match 
-      if prev_delim == '!': 
-        return match 
-      #raise MissingTokenError(rule) 
-      raise UnknownTokenError(rule, delim, match, next, prev_delim, prev_match)
-
-    return match  
-
-    
-    
-    
-
-
+    return re.match(tok_regex, self.data) 
 
 
 rule_set = [ 
