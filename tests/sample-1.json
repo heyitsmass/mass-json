@@ -1,0 +1,90 @@
+{"WhoisRecord": {
+  "domainName": "000.000.00.000",
+  "parseCode": 1.0E-1,
+  "audit": {
+    "createdDate": "2022-01-12 10:43:54 UTC",
+    "updatedDate": "2022-01-12 10:43:54 UTC"
+  },
+  "registrarName": "ARIN",
+  "registrarIANAID": "778",
+  "registryData": {
+    "domainName": "000.000.00.000",
+    "status": "NETWORK",
+    "rawText": "#\u000a# text omitted",
+    "parseCode": 88,
+    "audit": [
+      "somevalue", 
+      "someothervalue"
+    ],
+    "registrarName": "ARIN",
+    "registrarIANAID": "778",
+    "whoisServer": "whois.arin.net"
+  },
+  "domainNameExt": ".141",
+  "subRecords": [
+    {
+      "createdDate": "2010-05-14",
+      "updatedDate": "2012-03-02",
+      "registrant": {
+        "organization": "Cox Communications Inc.",
+        "street1": "1400 Lake Hearn Dr.",
+        "city": "Atlanta",
+        "state": "GA",
+        "postalCode": "30319",
+        "country": "US",
+        "rawText": "#\u000a# text omitted"
+      },
+      "administrativeContact": {
+        "organization": "Cox Communications Inc",
+        "email": "abuse@cox.net",
+        "telephone": "1-404-269-7626"
+      },
+      "technicalContact": {
+        "organization": "someOrganization Inc.", 
+        "email": "someemail@gmail.com",
+        "telephone": "somenumber"
+      },
+      "domainName": "000.00.00.000",
+      "nameServers": [
+        "www.google.com"
+      ],
+      "rawText": "#\u000a# text omitted",
+      "parseCode": 1,
+      "header": "none",
+      "customField1Name": "netRange",
+      "customField1Value": "000.000.00.000 - 000.000.00.000",
+      "customField2Name": "netName",
+      "customField2Value": "NET"
+    },
+    {
+      "createdDate": "2017-09-15",
+      "updatedDate": "2017-09-15",
+      "something":123,
+      "administrativeContact": {
+        "organization": "someOrganization Inc.", 
+        "email": "someemail@gmail.com",
+        "telephone": "somenumber"
+      },
+      "technicalContact": {
+        "organization": "someOrganization Inc.",
+        "somevalue":123,
+        "email": "someemail@gmail.com",
+        "telephone": "somenumber"
+      },
+      "domainName": "000.00.000.00",
+      "otherServers":{
+        "something":null,
+        "new":123
+      },
+      "nameServers": [],
+      "rawText": "#\u000a# text omitted",
+      "parseCode": 10,
+      "header": "#\u000a# text omitted",
+      "strippedText": "text omitted", 
+      "customField1Name": "netRange",
+      "customField1Value": "000.000.00.000 - 000.000.00.000",
+      "customField2Name": "netName",
+      "customField2Value": "NETBLK"
+    }
+  ]
+}}
