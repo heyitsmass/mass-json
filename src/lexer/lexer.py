@@ -111,8 +111,8 @@ class InputScanner(object):
 
     self.__scan(self.rules[self.ids[0]]) 
 
-    for token in self.tokens: 
-      print(token) 
+    #for token in self.tokens: 
+      #print(token) 
 
 
   def __scan(self, input, delim=None, _delim=None, _match=None, p_delim=None):
@@ -125,7 +125,12 @@ class InputScanner(object):
         rule = arg[:-1] 
         delim = arg[-1] 
 
-        match = self.__scan(rule, delim) 
+        ret = self.__scan(rule, delim) 
+
+        if type(ret) == tuple and len(ret) > 1: 
+          match = ret[0] 
+          tok_regex = ret[1] 
+
 
         if match: 
           _match = match 
@@ -143,12 +148,12 @@ class InputScanner(object):
             self.lineno += 1
             self.col = 0          
 
-          print(Token(kind, value, self.lineno, self.col, self.numchars)) #, delim, _delim, p_delim, next)
+          #print(Token(kind, value, self.lineno, self.col, self.numchars)) #, delim, _delim, p_delim, next)
           #self.tokens.append(Token(kind, value, self.lineno, self.col))
 
           self.col += match.span()[1]
           self.numchars += match.span()[1]
-
+          '''
           if '\\' in value: 
             value = value.replace('\\', '\\\\')
 
@@ -156,10 +161,10 @@ class InputScanner(object):
             value = '\\'+value 
 
           if kind in self.ids and kind not in ['json', 'object', 'array', 'value']: 
-            value = self.rules[kind]  
+            value = self.rules[kind]  '''
 
 
-          self.data = re.sub(value, '', self.data, 1) 
+          self.data = re.sub(tok_regex, '', self.data, 1) 
 
 
           if delim in ['!', '?'] and next: 
@@ -202,7 +207,7 @@ class InputScanner(object):
       else: 
         return 
     
-    return re.match(tok_regex, self.data) 
+    return (re.match(tok_regex, self.data), tok_regex)  
 
    
 rule_set = [ 
@@ -223,3 +228,5 @@ rule_set = [
 
 
 scanner = InputScanner(open(__FILENAME__).read(), rule_set)
+
+print("Done") 
