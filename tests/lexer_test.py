@@ -1,7 +1,7 @@
 
 import re 
 import argparse
-from typing import NamedTuple 
+from typing import NamedTuple, Union
 
 
 args = argparse.ArgumentParser(
@@ -11,63 +11,88 @@ args.add_argument('filename', metavar='filename',
 args = vars(args.parse_args())
 __FILENAME__ = args['filename'] 
 
-class Rules(object): 
-  def __init__(self, rules, *args): 
-    self.rules = dict() 
-    _WS = 'ws' in args 
-    delims = ['+', '!', '?', '*', '|'] 
+rule_set = [ 
+
+  ('json', r'(:object|array:)+'), 
+  ('object', r'\{!(:whitespace?pair!whitespace?:)*\}!'), 
+  ('value', r'(:string|number|object|array|boolean|Null:)?'), 
+  ('array', r'\[!(:whitespace?value!whitespace?comma$:)*\]!'),
+  ('pair', r'(:string!whitespace?colon!whitespace?value!whitespace?comma$whitespace?:)?'),
+  ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
+  ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
+  ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
+  ('boolean', r'true|false'),
+  ('Null', r'null'),
+  ('colon', r':'),
+  ('comma', r','),
+  ('mismatch', r'.')  
+]
+
+class RuleScanner(object): 
+  def __init__(self, rules): 
+
+    self.__ids = [rule[0] for rule in rules]
+    self.__rules = dict() 
+
+    delims = ['!', '|', '+', '?', '*', '$']
 
     for id, rule in rules: 
       if '(:' in rule: 
-        rule = re.split(r'\(:|:\)([|?|+*])', rule) 
-        rule = self.__remove(self.__remove(rule, ''), None) 
+        rule = self.__remove(re.split(r'\(:|:\)([!?|+*$])', rule), ('', None))
 
         for i, arg in enumerate(rule): 
-          if arg not in delims: 
-            arg = re.split(r'([+|!*?])', arg) 
-            arg = self.__remove(arg, '') 
+          rule[i] = self.__remove(re.split(r'([!?|+*$])', arg), '')
 
-            if len(arg) == 2: 
-              rule[i] = '(?P<%s>%s)%s' % (id, arg[0], arg[1]) 
-            else: 
-              if arg[len(arg)-1] not in delims: 
-                arg.append(arg[len(arg)-2]) 
-              for j, sub in enumerate(arg): 
-                arg[j] = sub+arg[j+1] 
-                arg.remove(arg[j+1]) 
-              arg.append(rule[i+1]) 
-              rule.remove(rule[i+1]) 
-              rule[i] = tuple(arg) 
-        if _WS: 
-          rule.insert(0, 'whitespace?') 
-          rule.append('whitespace?') 
-        self.rules[id] = tuple(rule) if len(rule) > 1 else rule[0] 
+          if i+1 < len(rule): 
+            if rule[i+1] in delims: 
+              for j, r in enumerate(rule[i]): 
+                if j+1 < len(rule[i]):
+                  rule[i][j] = r + rule[i][j+1]
+                  rule[i].remove(rule[i][j+1]) 
+                else: 
+                  if rule[i][j-1][-1] == '|': 
+                    rule[i][j] = r + rule[i][j-1][-1]
+                  else: 
+                    raise Exception("Missing Delimiter") 
+              rule[i].append(rule[i+1]) 
+              rule.remove(rule[i+1])
+              rule[i] = tuple(rule[i])
+              continue 
+          rule[i] ='(?P<%s>%s)%s' % (id, rule[i][0], rule[i][1])   
+        if len(rule) <= 1: 
+          self.__rules[id] = rule[0] 
+        else: 
+          self.__rules[id] = tuple(rule) 
       else: 
-        self.rules[id] = '(?P<%s>%s)' % (id, rule) 
-  
-  def __remove(self, rule:list, delim): 
-    if delim in rule: 
-      while delim in rule: 
-        rule.remove(delim) 
+        self.__rules[id] = '(?P<%s>%s)' % (id, rule)
+
+  def __remove(self, rule, delims:Union[str, tuple, list]): 
+    if type(delims) == str: 
+      while delims in rule: 
+        rule.remove(delims) 
+    elif type(delims) in [tuple, list]: 
+      for arg in delims: 
+        while arg in rule: 
+          rule.remove(arg) 
     return rule 
 
   def __iter__(self): 
-    return iter(self.rules) 
+    return iter(self.__rules) 
 
   def __getitem__(self, key): 
-    return self.rules[key] 
+    return self.__rules[key] 
 
   def __setitem__(self, key, value): 
-    self.rules[key] = value 
+    self.__rules[key] = value 
   
   def keys(self): 
-    return self.rules.keys() 
+    return self.__rules.keys() 
   
   def values(self): 
-    return self.rules.values() 
+    return self.__rules.values() 
   
   def items(self): 
-    return self.rules.items() 
+    return self.__rules.items() 
   
 
 class Token(NamedTuple): 
@@ -75,7 +100,6 @@ class Token(NamedTuple):
   value:str
   line:int 
   column:int
-  numchars:int
 
 class MissingTokenError(Exception): 
   def __init__(self, rule): 
@@ -85,9 +109,8 @@ class MissingTokenError(Exception):
     return "\n\tError, missing token: '%s'" % self.rule 
 
 
-class Info(Exception): 
-  def __init__(self, locals): 
-
+class InfoError(Exception): 
+  def __init__(self, locals:dict): 
     self.str = str() 
 
     for arg in locals: 
@@ -97,27 +120,190 @@ class Info(Exception):
   def __str__(self): 
     return self.str
 
+class Info(object): 
+  def __init__(self, locals): 
+
+    self.str = '\n\t'
+
+    for arg in locals: 
+      if arg != 'self' and arg in ['parent_delim', 'delim', 'prev_delim']:  
+        self.str += f"{arg}={locals[arg]} "
+
+  def __str__(self): 
+    return self.str
+
+
+
 
 class InputScanner(object): 
   def __init__(self, data, rules): 
-    self.rules = Rules(rules) 
+    self.rules = RuleScanner(rules) 
     self.data = data 
     self.tokens = list()
-    self.lineno = 0
-    self.col = 0
-    self.numchars = 0
+    self.lineno = self.col = 0
+    self.delims = ['+', '!', '|', '*', '?', '$']
 
     self.ids = [key for key in self.rules] 
 
-    self.__scan(self.rules[self.ids[0]]) 
+    match = self.__scan(self.rules[self.ids[0]], self.ids[0]) 
+
+    if type(match) == tuple and len(match) > 1: 
+      if match[0] == 'err': 
+        raise InfoError(match[1]) 
+
 
     for token in self.tokens: 
       print(token) 
 
+  def __scan(self, input, id, delim=None, parent_delim=None, prev_match=None, flag=None, match=None): 
+    if type(input) == tuple: 
+      tmp_input = input 
+      if input[-1] in self.delims: 
+        parent_delim = input[-1]
+        tmp_input = input[:-1] 
 
-  def __scan(self, input, delim=None, _delim=None, _match=None, p_delim=None):
+      for i, arg in enumerate(tmp_input): 
+        next = tmp_input[i+1] if i+1 < len(tmp_input) else None 
+        rule = arg[:-1] 
+        delim = arg[-1] 
+
+        #print(id, i, rule, delim, prev_delim, parent_delim) 
+
+        ret = self.__scan(rule, id, delim, parent_delim) 
+        
+        if type(ret) == tuple and len(ret) > 1:
+          if ret[0] == 'err': 
+            return ret 
+
+          match = ret[0] 
+          tok_regex = ret[1]
+        else: 
+          if type(ret) == re.Match and next: 
+            continue 
+          elif not ret: 
+            continue
+          elif ret == True: 
+            return True
+          else: 
+            raise InfoError(locals()) 
+
+        if match: 
+          kind = match.lastgroup 
+          value = match.group() 
+
+          print(id, Token(kind, value, self.lineno, self.col)) #, Info(locals())) 
+          
+          self.data = re.sub(tok_regex, '', self.data, 1) 
+          prev_match = match 
+
+          if delim in ['!', '?'] and parent_delim == '+' and next: 
+            continue 
+
+          if delim in ['!', '?', '$'] and next and not flag: 
+            continue 
+
+          if delim == '|': 
+            return match 
+
+          if flag == '$':
+            if value in ['}', ']'] or kind == 'whitespace': 
+              flag = None 
+              continue
+            else: 
+              raise InfoError(locals()) 
+          
+          if not next: 
+            return self.__scan(input, id, parent_delim=parent_delim, flag=flag) 
+          
+          raise InfoError(self.__sort_locals(locals())) 
+          
+        else: 
+
+          if delim == '?' and next: 
+            continue 
+
+          if delim == '|' and next: 
+            continue 
+
+          if delim == '$' and next: 
+            flag = '$'
+            continue 
+
+          if flag == '$' and next: 
+            return prev_match 
+
+          if delim in ['!', '?', '|'] and parent_delim == '?': 
+            return 
+
+          if delim == '$' and not next: 
+            return 
+
+          if delim == '?' and not flag: 
+            return 
+
+          if delim == '!' and parent_delim == '+': 
+            return 
+          
+          elif len(self.data) > 0: 
+            print(len(self.data)) 
+            #raise InfoError(locals())
+            return ('err', locals()) 
+          
+          else: 
+            return True 
+
+          raise InfoError(self.__sort_locals(locals())) 
+
+      if match: 
+        raise Exception 
+      else: 
+        if prev_match and flag == '$': 
+          return self.__scan(input, id, prev_match=prev_match, flag=flag) 
+        raise InfoError(locals())
+
+    elif type(input) == str: 
+      if input in self.ids: 
+        tok_regex = self.rules[input] 
+        if type(tok_regex) == tuple: 
+          return self.__scan(tok_regex, input, delim, parent_delim, flag=flag) 
+        elif type(input) != str: 
+          raise Exception("Unknown type '%s'" % type(tok_regex)) 
+      elif '?P' in input: 
+        tok_regex = input 
+      else: 
+        raise Exception("Unknown input '%s'" % input) 
+    else: 
+      raise Exception("Invalid input '%s'" % input)
+    return (re.match(tok_regex, self.data), tok_regex) 
+
+
+  def __sort_locals(self, locals:dict) -> dict: 
+    my_list = list(locals.items())[1:len(locals)-1]
+
+    for i in range(len(my_list)): 
+      for j in range(len(my_list)): 
+        #print(my_list[i][0], my_list[j][0]) 
+        if my_list[i][0] < my_list[j][0]: 
+          tmp = my_list[i]
+          my_list[i] = my_list[j] 
+          my_list[j] = tmp 
+
+    ret = dict() 
+
+    for i in range(len(my_list)): 
+      ret[my_list[i][0]] = my_list[i][1] 
+
+    return ret 
+
+
+
+    
+
+"""
+  def __scan(self, input, delim=None, _delim=None, _match=None, p_delim=None, id=None):
     if type(input) == tuple: 
       p_delim = delim 
+      tmp = '' 
       for index, arg in enumerate(input): 
         _delim = delim 
         next = input[index+1] if index+1 < len(input) else None 
@@ -125,7 +311,8 @@ class InputScanner(object):
         rule = arg[:-1] 
         delim = arg[-1] 
 
-        ret = self.__scan(rule, delim) 
+        #print(id) 
+        ret = self.__scan(rule, delim, id=id) 
 
         #print(ret) 
 
@@ -141,18 +328,24 @@ class InputScanner(object):
           value = match.group()  
           
           if delim == '|' and input[len(input)-1] == '*' or delim == '!' and _delim == '*':
-            #raise Exception  
             return (match, tok_regex) 
           
           if delim == '*': 
+            continue
+
+          if '}' in tmp: 
+            print(Token(kind, value, self.lineno, self.col, self.numchars), delim, _delim)
             continue 
 
           if kind == 'whitespace' and '\n' in value: 
             self.lineno += 1
             self.col = 0          
 
-          #print(Token(kind, value, self.lineno, self.col, self.numchars)) #, delim, _delim, p_delim, next)
+          tmp += value 
+          #print(Token(kind, value, self.lineno, self.col, self.numchars), delim, _delim)
           #self.tokens.append(Token(kind, value, self.lineno, self.col))
+          if value in ['{', '}', '[', ']']: 
+            print(Token(kind, value, self.lineno, self.col, self.numchars))
 
           self.col += match.span()[1]
           self.numchars += match.span()[1]
@@ -165,7 +358,8 @@ class InputScanner(object):
             continue
 
           if not next: 
-            return self.__scan(input, _delim) 
+              print(Token('pair', tmp, self.lineno, self.col, self.numchars)) #, delim, _delim, p_delim, next)
+              return self.__scan(input, _delim, id=id) 
 
           if delim == '|':  
             return match 
@@ -186,6 +380,7 @@ class InputScanner(object):
             if not _match: 
               return 
           
+          
           raise Info(locals())
       
     
@@ -195,12 +390,13 @@ class InputScanner(object):
       elif input in self.ids: 
         tok_regex = self.rules[input] 
         if type(tok_regex) == tuple: 
-          return self.__scan(tok_regex, delim)
+          #print(Token(id, tmp, self.lineno, self.col, self.numchars)) #, delim, _delim, p_delim, next)
+          return self.__scan(tok_regex, delim, id=input)
       else: 
         return 
     
     return (re.match(tok_regex, self.data), tok_regex) 
-
+"""
 """
   def __scan_old(self, input, id, delim = None, _delim=None, _match=None, prev_delim=None): 
     if type(input) == tuple:
@@ -302,23 +498,6 @@ class InputScanner(object):
 
     return (re.match(tok_regex, self.data), tok_regex) 
 """
-
-   
-rule_set = [ 
-  ('json', r'(:object|array:)+'), 
-  ('object', r'\{!(:whitespace?string!whitespace?colon!whitespace?value!whitespace?comma?:)*\}!'), 
-  ('array', r'\[!(:whitespace?value!whitespace?comma?:)*\]!'), 
-  ('value', r'(:string|number|object|array|boolean|NULL:)*'), 
-  ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
-  ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
-  ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
-  ('boolean', r'true|false'),
-  ('NULL', r'null'),
-  ('colon', r':'),
-  ('comma', r','),
-  ('mismatch', r'.')
-]
-
 
 
 scanner = InputScanner(open(__FILENAME__).read(), rule_set)
