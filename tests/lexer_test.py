@@ -14,9 +14,9 @@ __FILENAME__ = args['filename']
 rule_set = [ 
 
   ('json', r'(:object|array:)+'), 
-  ('object', r'\{!(:whitespace?pair!whitespace?:)*\}!'), 
+  ('object', r'\{!(:pair!:)*\}!'), 
   ('value', r'(:string|number|object|array|boolean|Null:)?'), 
-  ('array', r'\[!(:whitespace?value!whitespace?comma$:)*\]!'),
+  ('array', r'\[!(:whitespace?value!comma$whitespace?:)*\]!'),
   ('pair', r'(:string!whitespace?colon!whitespace?value!whitespace?comma$whitespace?:)?'),
   ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
   ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),

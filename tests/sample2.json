@@ -1,2 +1,2 @@
-"string1" : "something1",
-"string2" : "something2"
+{"string1" : "something1",
+  "string2" : "something2","something":"else"}
