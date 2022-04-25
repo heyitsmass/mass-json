@@ -1,2 +1,7 @@
+<<<<<<< Updated upstream
 {"string1" : "something1",
   "string2" : "something2","something":"else"}
+=======
+"string1" : "something1",
+"string2" : "something2" 
+>>>>>>> Stashed changes

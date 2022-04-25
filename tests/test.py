@@ -12,11 +12,15 @@ args = vars(args.parse_args())
 __FILENAME__ = args['filename'] 
 
 rule_set = [ 
+<<<<<<< Updated upstream
   ('json', r'(:object|array:)+'), 
   ('object', r'\{!(:pair!:)*\}!'), 
   ('value', r'(:string|number|object|array|boolean|Null:)?'), 
   ('array', r'\[!(:whitespace?value!comma$whitespace?:)*\]!'),
   ('pair', r'(:whitespace?string!whitespace?colon!whitespace?value!whitespace?comma$whitespace?:)*'),
+=======
+  ('pair', r'(:whitespace?string!whitespace?colon!whitespace?string!whitespace?comma$whitespace?:)*'),
+>>>>>>> Stashed changes
   ('string', r'\"(?:(?:(?!\\)[^\"])*(?:\\[/bfnrt]|\\u[0-9a-fA-F]{4}|\\\\)?)+?\"'),
   ('number', r'[-]?\d+(?:[.]?\d+)?(?:[Ee]?[-+]?\d+)?'),
   ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+'),
@@ -193,8 +197,12 @@ class InputScanner(object):
     return (re.match(tok_regex, self.data), tok_regex)
 
 
+<<<<<<< Updated upstream
   def __scan_old(self, input, id, delim=None, parent_delim=None, prev_match=None, flag=None, final=''): 
     match = None 
+=======
+  def __scan(self, input, id, delim=None, parent_delim=None, flag=None, prev_match=None): 
+>>>>>>> Stashed changes
     if type(input) == tuple: 
       tmp_input = input 
       #print(tmp_input, delim) 
@@ -210,10 +218,17 @@ class InputScanner(object):
         rule = arg[:-1] 
         delim = arg[-1] 
 
+<<<<<<< Updated upstream
         ret = self.__scan(rule, id, delim, parent_delim, prev_match, flag, final)
         print(ret)  
         #print(final) 
         # Return value handling 
+=======
+        #print(id, i, rule, delim, prev_delim, parent_delim) 
+
+        ret = self.__scan(rule, id, delim, parent_delim, flag, prev_match) 
+        
+>>>>>>> Stashed changes
         if type(ret) == tuple and len(ret) > 1: 
           match = ret[0] 
           tok_regex = ret[1]
@@ -246,6 +261,7 @@ class InputScanner(object):
           #*****************    2a    *****************#
           
           self.data = re.sub(tok_regex, '', self.data, 1) 
+<<<<<<< Updated upstream
 
           #*****************    1a    *****************#
           # User customizable options for '$' delimiter 
@@ -312,13 +328,56 @@ class InputScanner(object):
       else: 
         raise InfoError(locals())
       #*****************    1c    *****************#
+=======
+
+          prev_match = match 
+
+          if parent_delim == '*': 
+            if flag: 
+              if value in ['}', ']'] or kind == 'whitespace': 
+                flag = None 
+                continue
+              else: 
+                raise Exception 
+
+            if delim in ['!', '?']: 
+              continue 
+            
+            if delim == '$': 
+              flag = delim 
+              continue       
+
+
+          raise InfoError(self.__sort_locals(locals())) 
+          
+        else: 
+
+          if parent_delim == '*': 
+            if delim in ['?', '!']: 
+              continue 
+
+            if delim == '$': 
+              flag = delim 
+              continue 
+
+          raise InfoError(self.__sort_locals(locals())) 
+
+      if match and not flag: 
+        return self.__scan(input, id, delim, parent_delim, flag, prev_match) 
+      else: 
+        raise InfoError(locals()) 
+>>>>>>> Stashed changes
 
     elif type(input) == str: 
       if input in self.ids: 
         tok_regex = self.rules[input] 
 
         if type(tok_regex) == tuple: 
+<<<<<<< Updated upstream
           return self.__scan(tok_regex, input, delim, parent_delim, prev_match, flag, final) 
+=======
+          return self.__scan(tok_regex, input, delim, parent_delim, flag, prev_match) 
+>>>>>>> Stashed changes
         elif type(input) != str: 
           raise Exception("Unknown type '%s'" % type(tok_regex)) 
       

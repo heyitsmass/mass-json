@@ -169,7 +169,7 @@ class InputScanner(object):
 
         #print(id, i, rule, delim, prev_delim, parent_delim) 
 
-        ret = self.__scan(rule, id, delim, parent_delim) 
+        ret = self.__scan(rule, id, delim, parent_delim, prev_match) 
         
         if type(ret) == tuple and len(ret) > 1:
           if ret[0] == 'err': 
@@ -213,7 +213,7 @@ class InputScanner(object):
               raise InfoError(locals()) 
           
           if not next: 
-            return self.__scan(input, id, parent_delim=parent_delim, flag=flag) 
+            return self.__scan(input, id, delim, parent_delim, prev_match, flag=flag) 
           
           raise InfoError(self.__sort_locals(locals())) 
           
@@ -233,16 +233,16 @@ class InputScanner(object):
             return prev_match 
 
           if delim in ['!', '?', '|'] and parent_delim == '?': 
-            return 
+            return prev_match 
 
           if delim == '$' and not next: 
-            return 
+            return prev_match 
 
           if delim == '?' and not flag: 
-            return 
+            return prev_match 
 
           if delim == '!' and parent_delim == '+': 
-            return 
+            return prev_match 
           
           elif len(self.data) > 0: 
             print(len(self.data)) 
@@ -265,7 +265,7 @@ class InputScanner(object):
       if input in self.ids: 
         tok_regex = self.rules[input] 
         if type(tok_regex) == tuple: 
-          return self.__scan(tok_regex, input, delim, parent_delim, flag=flag) 
+          return self.__scan(tok_regex, input, delim, parent_delim, prev_match, flag=flag) 
         elif type(input) != str: 
           raise Exception("Unknown type '%s'" % type(tok_regex)) 
       elif '?P' in input: 
