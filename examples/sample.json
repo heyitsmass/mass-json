@@ -1,0 +1,53 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users(...)/mailfolders('inbox')messages(subject,from,receivedDateTime)",
+  "value": [
+    {
+      "@odata.etag": "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABufX4i\"",
+      "id": "AAMkADRmMDExYzhjLWYyNGMtNDZmMC1iZDU4LTRkMjk4YTdjMjU5OABGAAAAAABp4MZ-5xP3TJnNAPmjsRslBwAoPBSqxXQOT6tuE0pxCMrtAAAAAAEMAAAoPBSqxXQOT6tuE0pxCMrtAABufW1UAAA=",
+      "subject": "Ruby on Rails tutorial",
+      "from": {
+        "emailAddress": {
+          "address": "jason@contoso.onmicrosoft.com",
+          "name": "Jason Johnston"
+        }
+      },
+      "receivedDateTime": "2015-01-29T20:44:53Z"
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABSzmz4\"",
+      "id": "AAMkADRmMDExYzhjLWYyNGMtNDZmMC1iZDU4LTRkMjk4YTdjMjU5OABGAAAAAABp4MZ-5xP3TJnNAPmjsRslBwAoPBSqxXQOT6tuE0pxCMrtAAAAAAEMAAAoPBSqxXQOT6tuE0pxCMrtAABMirSeAAA=",
+      "subject": "Trip Information",
+      "from": {
+        "emailAddress": {
+          "address": "jason@contoso.onmicrosoft.com",
+          "name": "Jason Johnston"
+        }
+      },
+      "receivedDateTime": "2014-12-09T21:55:41Z"
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABzxiLG\"",
+      "id": "AAMkADRmMDExYzhjLWYyNGMtNDZmMC1iZDU4LTRkMjk4YTdjMjU5OABGAAAAAABp4MZ-5xP3TJnNAPmjsRslBwAoPBSqxXQOT6tuE0pxCMrtAAAAAAEMAAAoPBSqxXQOT6tuE0pxCMrtAABAblZoAAA=",
+      "subject": "Multiple attachments",
+      "from": {
+        "emailAddress": {
+          "address": "jason@contoso.onmicrosoft.com",
+          "name": "Jason Johnston"
+        }
+      },
+      "receivedDateTime": "2014-11-19T20:35:59Z"
+    },
+    {
+      "@odata.etag": "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAAA9yBBa\"",
+      "id": "AAMkADRmMDExYzhjLWYyNGMtNDZmMC1iZDU4LTRkMjk4YTdjMjU5OABGAAAAAABp4MZ-5xP3TJnNAPmjsRslBwAoPBSqxXQOT6tuE0pxCMrtAAAAAAEMAAAoPBSqxXQOT6tuE0pxCMrtAAA9x_8YAAA=",
+      "subject": "Attachments",
+      "from": {
+        "emailAddress": {
+          "address": "jason@contoso.onmicrosoft.com",
+          "name": "Jason Johnston"
+        }
+      },
+      "receivedDateTime": "2014-11-18T20:38:43Z"
+    }
+  ]
+}
