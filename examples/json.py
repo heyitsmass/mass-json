@@ -1,4 +1,8 @@
-from ruleParser import Rule_parser
+import sys
+sys.path.append('..')
+
+from src.ruleParser import Rule_parser
+
 
 raw_rules= [ 
   ('json', r'(:object|array:)+'), 
