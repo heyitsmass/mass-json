@@ -35,6 +35,19 @@ class Input_scanner(object):
 
     match = self._scan(self.rules[self.parentID], self.parentID) 
 
+  def _verify_rule(self, input, prev): 
+    delim = input[-1] 
+    rule = input 
+    if delim not in self.delims: 
+      if prev[-1] == '|': 
+        delim = prev[-1] 
+      else: 
+        raise Exception("Missing Delimiter") 
+    else: 
+      rule = input[:-1] 
+    
+    return rule, delim 
+    
 
   def _scan(self, inputRule, inputID, prev_delim=None, parent_delim=None): 
     
@@ -50,16 +63,11 @@ class Input_scanner(object):
       
       for i, arg in enumerate(tmp_rule): 
         next = inputRule[:-1][i+1] if i+1 < len(inputRule[:-1]) else None 
+        prev = inputRule[:-1][i-1] if i-1 >= 0 else None 
 
-        delim = arg[-1] 
-        rule = arg 
-        if delim not in self.delims: 
-          if i-1 >= 0 and inputRule[i-1][-1] == '|': 
-            delim = inputRule[i-1][-1] 
-          else: 
-            raise Exception("Missing Delimiter") 
-        else: 
-          rule = arg[:-1] 
+
+        rule, delim = self._verify_rule(arg, prev)
+
 
         ret = self._scan(rule, inputID, delim, prev_delim)
 
@@ -75,19 +83,31 @@ class Input_scanner(object):
           kind = match.lastgroup 
           value = match.group() 
 
-          print(Token(kind, value, self.lineno)) 
+          print(Token(kind, value, self.lineno), delim, prev_delim, parent_delim) 
 
           if kind == 'whitespace' and '\n' in value: 
             self.lineno += 1
 
           self.data = re.sub(tok_regex, '', self.data, 1)
           
-          if delim == '!': 
+          if delim == '!' or delim == '?': 
             continue
+
+          if delim == '|':  
+            
+            for j, tmp in enumerate(tmp_rule[i+1:]): 
+              r, d = self._verify_rule(tmp, tmp_rule[j])
+              if d != '|': 
+                return self._scan(r, d, delim, parent_delim)    
+            return match 
+
 
 
           raise Info(locals()) 
         else: 
+
+          if delim == '?': 
+            continue 
           
           raise Info(locals()) 
 
