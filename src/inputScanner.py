@@ -22,6 +22,14 @@ class Token(NamedTuple):
   line:int
 
 
+class MissingTokenError(Exception): 
+  def __init__(self): 
+    ... 
+
+  def __str__(self): 
+    return "Missing token" 
+
+
 class Input_scanner(object): 
   def __init__(self, data, rules): 
     self.rules = Rule_parser(rules) 
@@ -94,13 +102,24 @@ class Input_scanner(object):
             continue
 
           if delim == '|':  
-            
-            for j, tmp in enumerate(tmp_rule[i+1:]): 
-              r, d = self._verify_rule(tmp, tmp_rule[j])
-              if d != '|': 
-                return self._scan(r, d, delim, parent_delim)    
-            return match 
 
+            # check next rule, if it doesnt contain the current delimiter then we can skip that value and continue with the next 
+            # otherwise we need to iterate through until we find a required value and continue from there
+            tmp_delim = next[-1] 
+
+             
+            if tmp_delim == '|': 
+              for j, tmp in enumerate(tmp_rule[i+1:]): 
+                r, d = self._verify_rule(tmp, tmp_rule[j])
+                if d != '|': 
+                  return self._scan(r, d, delim, parent_delim)    
+              return match 
+            else: 
+              if i+2 <= len(tmp_rule): 
+                r, d = self._verify_rule(tmp_rule[i+2], next) 
+                return self._scan(r, d, delim, parent_delim) 
+              else: 
+                raise MissingTokenError() 
 
 
           raise Info(locals()) 
