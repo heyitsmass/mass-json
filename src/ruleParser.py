@@ -1,7 +1,6 @@
 import re 
 from typing import Union
 
-
 class RuleError(Exception): 
   
   def __init__(self, id, rule): 

@@ -1,5 +1,5 @@
 {
-  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users(...)/mailfolders('inbox')messages(subject,from,receivedDateTime)",
+  "@odata.context": 123,
   "value": [
     {
       "@odata.etag": "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABufX4i\"",
