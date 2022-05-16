@@ -1,5 +1,4 @@
-import re 
-from typing import Union
+from rule_scanner import RuleScanner
 
 __FILENAME__ = 'sample.json' 
 
@@ -16,69 +15,8 @@ raw_rules = [('json', r'(:object|array:)'),
              ('whitespace', r'[ \u0020\u000A\u000D\u0009\t]+')]
 
 
-class Rule(object): 
-  def __init__(self):  
-    ...
+if __name__ == "__main__": 
+  rule = RuleScanner(raw_rules, 'simple') 
 
-
-
-class RuleParser(object): 
-  def __init__(self, raw_rules):  
-
-    self.rules = self._parse(raw_rules, [id for id, rule in raw_rules])
-
-
-  def _verify(self, input:list): 
-    # Not currently implemented 
-    ... 
-            
-  def _parse(self, input:list, ids:list) -> dict:
-
-    tmp = dict() 
-
-    for id, rule in input: 
-      if '(:' in rule and ':)' in rule: 
-        rule = re.split(r'([?|!*$])', rule.strip('(:)'))
-        rule = self._sanitize(rule, '')  
-
-        for i, tmp in enumerate(rule):  
-          if i+1 < len(rule): 
-            if rule[i] not in ids:
-              rule[i] = ('(?P<%s>%s)%s' % (id, tmp, rule[i+1]))
-            else: 
-              rule[i] += rule[i+1]  
-            rule.remove(rule[i+1]) 
-          else: 
-            if i-1 >= 0: 
-              if rule[i-1][-1] != '|': 
-                raise Exception(f"Unknown delimiter '{rule[i-1][-1]}'")
-              rule[i] += rule[i-1][-1]
-            else: 
-              raise Exception(f"Unable to parse '{id}' -> '{rule}'")
-        
-
-        tmp[id] = tuple(rule) 
-      else: 
-        tmp[id] = ('(?P<%s>%s)' % (id, rule))
-
-    return tmp 
-    
-
-
-  def _sanitize(self, input:list, delim:str): 
-    while delim in input: 
-      input.remove(delim)  
-    return input 
-    
-      
-      
-
-
-
-rules = RuleParser(raw_rules) 
-
-
-      
-  
-
-
+  for id in rule: 
+    print(id, rule[id]) 
