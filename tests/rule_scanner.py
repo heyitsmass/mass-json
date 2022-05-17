@@ -17,6 +17,9 @@ class Rule(object):
   -------
       __repr__: 
           Outputs the information within the Rule depending on the depth value defined by the user (Default to 1) 
+
+      __set_str(depth): 
+
   """
 
   def __init__(self, depth:Union[str, int], id:str, delim:str=None, tok_regex:str=None):
@@ -39,17 +42,20 @@ class Rule(object):
     self.id = id
     self.delim = delim 
     self.tok_regex = tok_regex 
-    self.__depth = depth
+    self.__str = self.__set_str(depth) 
 
   def __repr__(self):
-    if self.__depth in ['simple', 'simplified', 0]: 
+    return self.__str 
+
+  def __set_str(self, depth): 
+    if depth in ['simple', 'simplified', 0];
       return f"{self.tok_regex + (self.delim if self.delim else '')}"
-    elif self.__depth in ['intermediate', 'moderate', 1]: 
+    elif depth in ['intermediate', 'moderate', 1]: 
       return f"Rule(tok_regex={self.tok_regex}, delim={self.delim})"
-    elif self.__depth in ['advanced', 'complex', 2]:
+    elif depth in ['advanced', 'complex', 2]:
       return f"Rule(id={self.id}, tok_regex={self.tok_regex}, delim={self.delim})"
     else: 
-      raise InputError(self.__depth)
+      raise InputError(depth) 
 
 
 class DelimiterError(Exception): 
