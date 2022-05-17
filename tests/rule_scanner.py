@@ -7,18 +7,21 @@ class Rule(object):
   Attributes
   ----------
       id : str
-          The ID of the parent rule 
+          The ID of the parent rule.
       delim : str
-          The delimiter associated with the rule
+          The delimiter associated with the rule.
       tok_regex: str
-          The regex token (pre-processing) for the re.match function 
+          The regex token (pre-processing) for the re.match function.
+      __str : str 
+          The string for __repr__.
 
   Methods
   -------
       __repr__: 
-          Outputs the information within the Rule depending on the depth value defined by the user (Default to 1) 
+          Outputs the information within the Rule depending on the depth value defined by the user (Default to 1). 
 
       __set_str(depth): 
+          Set the string for __repr__ considering the depth value.
 
   """
 
@@ -30,13 +33,16 @@ class Rule(object):
         depth : str, int
             Defines the depth of the information outputted when printing. 
             
-            Defaults to 1 or 'moderate', Information stored is constant
+            Defaults to 1 or 'moderate', Information stored is constant.
+
         id : str
-            The ID the rule does or helps represent.     
+            The ID the rule does or helps represent.
+
         delim : str, optional
-            The associated delimiter with the rule. Defaults to None if not defined. 
+            The associated delimiter with the rule. Defaults to None if not defined.
+
         tok_regex : str, optional 
-            The associated regex token (pre-processing)
+            The associated regex token (pre-processing).
     """
 
     self.id = id
@@ -47,8 +53,24 @@ class Rule(object):
   def __repr__(self):
     return self.__str 
 
-  def __set_str(self, depth): 
-    if depth in ['simple', 'simplified', 0];
+  def __set_str(self, depth:Union[str,int]): 
+    """Set the string for __repr__ considering the depth value. 
+
+    Raises an InputError if the depth value is unknown.
+
+    Parameters
+    ----------
+        depth : str, int
+            Defines the depth of the information outputted when printing. 
+            
+            Defaults to 1 or 'moderate', Information stored is constant.
+
+    Returns
+    -------
+        An f string that represents the elements in the object. 
+    """ 
+
+    if depth in ['simple', 'simplified', 0]:
       return f"{self.tok_regex + (self.delim if self.delim else '')}"
     elif depth in ['intermediate', 'moderate', 1]: 
       return f"Rule(tok_regex={self.tok_regex}, delim={self.delim})"
@@ -97,69 +119,63 @@ class RuleScanner(object):
   Attributes
   ----------
       __rules : dict, private
-            A private dictionary of stored rules after parsing accessed as 'id : rule'
+            A private dictionary of stored rules after parsing accessed as 'id : rule'.
 
       __ids : list, private
-            A private list of ids from the user defined raw_rules 
+            A private list of ids from the user defined raw_rules.
 
       __depth : str, int, private 
-            A private, user defined output information depth level, Defaulted to 1
+            A private, user defined output information depth level. Defaults to 1.
 
   Methods
   -------
-      compile(raw_rules): 
+      compile(raw_rules) -> dict: 
             Compiles the parsed rules into a formatted dictionary. 
   
-      verify(rule): 
+      verify(rule) -> bool: 
             Verify the rule is formatted correctly prior to parsing.
 
-      sanitize(raw_rule, delim='', count=0): 
+      sanitize(raw_rule, delim='', count=0) -> list: 
             Split and sanitize the rule from the user delimiter. 
 
-      parse(id, rule): 
-            <desc> 
+      parse(id, rule) -> tuple: 
+            Parses and formats each rule from the sanitized list of rules.  
 
-      set_rule(id, rule, i=None, tmp=None): 
-            <desc> 
+      set_rule(id, rule, i=None, tmp=None) -> Rule: 
+            Generates and returns a Rule object from the input value.
 
-      _set_rule(id, rule, i, tmp): 
-            <desc> 
-
-      get_prev_delim(rule, i): 
+      get_prev_delim(rule, i) -> str: 
             Returns the delimiter from the previous.
 
-      get_ids(rules): 
+      get_ids(rules) -> list: 
             Returns a list of ids from the user defined raw_rules list. 
 
-      __check_depth(depth): 
-            Verifies the type of depth, lowercase adjusts string input and returns the value.
-
       keys(): 
-            Returns a list of keys in __rules 
+            Returns a list of keys in __rules. 
 
       values(): 
-            Returns a list of values in __rules 
+            Returns a list of values in __rules. 
 
       items():
-            Returns a set-like object of items in __rules
+            Returns a set-like object of items in __rules.
   """
 
   def __init__(self, raw_rules:list, depth:Union[str,int]=1):  
-    """Construct the necessary attributes for the RuleScanner class
+    """Construct the necessary attributes for the RuleScanner class.
 
     Verifies and stores the depth is of correct type. 
     
     Collects a group of ids for the set_rule helper function. 
     
-    Calls compile to parse and store the formatted rules 
+    Calls compile to parse and store the formatted rules. 
 
     Parameters
     ----------
         raw_rules: list
-                <desc>    
+                User defined list of rules prior to parsing.    
 
         depth : str, int, optional 
-                <desc>  
+                User defined depth value defining the amount of information outputting when printing each rule.  
     """
 
     self.__depth = self.__check_depth(depth) 
@@ -171,7 +187,7 @@ class RuleScanner(object):
     """Compile the parsed rules into a formatted dictionary.
 
     Each rule will be a dictionary key with it's value being either a: 
-      i) Tuple of regex tokens 
+      i)  Tuple of regex tokens 
 
       ii) Single regex token 
     
@@ -185,7 +201,7 @@ class RuleScanner(object):
     Returns
     -------
         final : dict 
-            The dictionary of parsed rules
+            The dictionary of parsed rules.
     """
 
     final = dict() 
@@ -202,6 +218,7 @@ class RuleScanner(object):
 
   def verify(self, rule:str) -> bool:
     """Verify the rule is formatted correctly prior to parsing."""
+
     return re.Match == type(re.match(r'\(:(?:[^)]+?[!*$?|]?)*:\)', rule))
 
 
@@ -217,19 +234,22 @@ class RuleScanner(object):
     Parameters
     ----------
         raw_rule : str
-                Raw input rule in string format  
+              Raw input rule in string format.  
+
         delim : str, optional
-                Delimiter to be removed from the array after splitting; 
-                Sanitizes unecessary values from the re.split output. 
-                Defaults to an empty string. 
+              Delimiter to be removed from the array after splitting; 
+              Sanitizes unecessary values from the re.split output. 
+
+              Defaults to an empty string. 
+
         count : int, optional
-                Number of times to remove the delimiter from the array; 
-                Defaults to 0 (infinite) unless otherwise specified. 
+              Number of times to remove the delimiter from the array; 
+              Defaults to 0 (infinite) unless otherwise specified. 
 
     Returns
     -------
         rules : list
-                Formatted array of split rules 
+              Formatted array of split rules 
     """ 
     rules = re.split(r'([?|!*$])', raw_rule.strip('(:)'))
 
@@ -242,64 +262,76 @@ class RuleScanner(object):
     return rules
 
     
-  def parse(self, id:str, rule:str) -> tuple:
-    """<Description> 
+  def parse(self, id:str, rule:list) -> tuple:
+    """Parse and format each rule from the input. 
 
-    ... 
+    Create a new tuple of parsed rules from the sanitized list of rules passed in from the compile function. 
+
+    Formatting of data is handled by helper functions.
 
     Parameters
     ----------
-        <param> : <type>
-                <desc> 
+        id : str
+            Identifier of the parent rule being parsed.
+
+        rule : list
+            List of rules being parsed from the parent <id>.
 
     Returns
     -------
-        None
+        A tuple of the parsed rule list
     """ 
     for i, tmp in enumerate(rule): 
       rule[i] = self.set_rule(id, rule, i, tmp) 
     return tuple(rule) 
 
 
-  def set_rule(self, id:str, rule:str, i:int=None, tmp:str=None) -> Rule:
-    """<Description> 
+  def set_rule(self, id:str, rule:Union[str,list], i:int=None, tmp:str=None) -> Rule:
+    """Generate and return a Rule object from the input 
 
-    ... 
-
+    Removes the delimiter from the main rule list and appends to the Rule object 
+    
     Parameters
     ----------
-        <param> : <type>
-                <desc> 
+        id : str
+            The parent or rule identifier. 
+
+            Parent identifier is expcted if rule is a list. 
+
+            Rule identifier is expected if the rule is string. 
+
+        rule : str, list
+            A list of rules or a singular rule to be formed into a Rule object.
+
+        i : int, optional 
+            Current index from the rule being parsed. Default = None. 
+
+            Expected if the input rule is a list or tmp is passed in.
+
+        tmp : str, optional
+            Temporary list or singular rule post parsing. Default=None. 
+
+            Expected if the input rule is a list and i is passed in.  
 
     Returns
     -------
-        None
+        A Rule object with associated information 
     """ 
+
     if not i and not tmp: 
-      return Rule(id, None, ('(?P<%s>%s)' % (id, rule)), self.__depth)
+      return Rule(self.__depth, id, None, ('(?P<%s>%s)' % (id, rule)))
     else: 
       if i+1 < len(rule): 
-        ret = self._set_rule(id, rule, i, tmp) 
+        ret = self.__set_rule(id, rule, i, tmp) 
         rule.remove(rule[i+1]) 
         return ret 
       else: 
-        return Rule(id, self.get_prev_delim(rule, i), rule[i], self.__depth)
+        return Rule(self.__depth, id, self.get_prev_delim(rule, i), rule[i])
 
 
-  def _set_rule(self, id:str, rule:str, i:int, tmp:str) -> Rule:
-    """<Description> 
+  def __set_rule(self, id:str, rule:str, i:int, tmp:str) -> Rule:
+    """Helps generate Rule objects for rules not contained in the identifier list"""
 
-    ... 
-
-    Parameters
-    ----------
-        <param> : <type>
-                <desc> 
-
-    Returns
-    -------
-        None
-    """
     if tmp not in self.__ids: 
       return Rule(self.__depth, id, rule[i+1], '(?P<%s>%s)' % (id, tmp))
     return Rule(self.__depth, id, rule[i+1], rule[i])
@@ -309,20 +341,21 @@ class RuleScanner(object):
 
     Raises a ParseError if no previous delimiter exists.
 
-    Raises a DelimiterError if the previous delimiter is not equal to |.
+    Raises a DelimiterError if the previous delimiter is not equal to <|>.
 
     Parameters
     ----------
         rule : list
-          current rule being parsed
+          The current rule being parsed.
 
         i : int
-          current index of the passed rule 
+          The current index of the passed rule. 
 
     Returns
     -------
-        The previous delimiter if available 
+        The previous delimiter if available.
     """ 
+
     if i-1 >= 0: 
       if rule[i-1].delim == '|': 
         return rule[i-1].delim 
@@ -332,17 +365,17 @@ class RuleScanner(object):
   def __check_depth(self, depth:Union[str, int]): 
     """Verify the type of depth, lowercase adjust for user input and return the value.
 
-    Raises a TypeError if depth is not a string or integer 
+    Raises a TypeError if depth is not a string or integer. 
 
     Parameters
     ----------
         depth : str, int
-            The associated user defined depth level 
+            The associated user defined depth level. 
 
     Returns
     -------
         depth:
-            A lowercase adjusted string or integer depending on input type
+            A lowercase adjusted string or integer depending on input type.
     """
     if type(depth) == int: 
       return depth 
@@ -358,11 +391,11 @@ class RuleScanner(object):
     Parameters
     ----------
         rules : list
-            A list of tuples seperated by (id, rule) 
+            A list of tuples seperated by (id, rule). 
 
     Returns
     -------
-            A list of ids from the input 
+            A list of ids from the input. 
     """
     return [id for id, rule in rules] 
   
