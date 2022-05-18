@@ -1,4 +1,5 @@
-import re 
+import re
+from turtle import st 
 from typing import Union
 
 class Rule(object):
@@ -283,7 +284,7 @@ class RuleScanner(object):
     """ 
     for i, tmp in enumerate(rule): 
       rule[i] = self.set_rule(id, rule, i, tmp) 
-    return tuple(rule) 
+    return tuple(rule) #if len(rule) > 1 else rule[0] # Check if necessary for rules of length 1
 
 
   def set_rule(self, id:str, rule:Union[str,list], i:int=None, tmp:str=None) -> Rule:
@@ -323,11 +324,50 @@ class RuleScanner(object):
     else: 
       if i+1 < len(rule): 
         ret = self.__set_rule(id, rule, i, tmp) 
-        rule.remove(rule[i+1]) 
+        #next = self.get_next_rule(id, rule, i+1, tmp)
+
+        rule.remove(rule[i+1])
+
         return ret 
       else: 
         return Rule(self.__depth, id, self.get_prev_delim(rule, i), rule[i])
+        
+  """
+  def get_next_rule(self, id, rule, i, tmp): 
+    if i+1 < len(rule): 
+      tmp_rule = rule[i+1]
+      if i+2 < len(rule): 
+        tmp_delim = rule[i+2]
+      else: 
+        tmp_delim = self.__get_prev_delim(rule, i+1)
+    else: 
+      tmp_rule = tmp_delim = "None"
 
+    Rule(self.reorder(self.__depth, id, tmp_rule, tmp_delim)) 
+
+    return Rule(self.__depth, id, tmp_rule, tmp_delim)
+
+  def reorder(self, *args): 
+    depth = int 
+    id = str 
+    tok_regex = '(?P<%s>%s)' 
+    delim = str 
+
+    DELIMS = ['|', '*', '$', '!', '?']
+
+    for arg in args: 
+      if arg in DELIMS: 
+        delim = arg 
+      elif type(arg) == int: 
+        depth = arg
+
+  def __get_prev_delim(self, rule, i): 
+    if i-1 >= 0: 
+      if rule[i-1] == '|': 
+        return rule[i-1] 
+      raise DelimiterError(rule[i-1])
+    raise ParseError(rule) 
+  """
 
   def __set_rule(self, id:str, rule:str, i:int, tmp:str) -> Rule:
     """Helps generate Rule objects for rules not contained in the identifier list"""
@@ -359,7 +399,7 @@ class RuleScanner(object):
     if i-1 >= 0: 
       if rule[i-1].delim == '|': 
         return rule[i-1].delim 
-      raise DelimiterError(rule[i-1][-1])
+      raise DelimiterError(rule[i-1].delim)
     raise ParseError(rule)
     
   def __check_depth(self, depth:Union[str, int]): 
@@ -403,8 +443,11 @@ class RuleScanner(object):
   def __iter__(self): 
     return iter(self.__rules) 
   
-  def __getitem__(self, key:any) -> any: 
+  def __getitem__(self, key): 
     return self.__rules[key] 
+
+  def __repr__(self): 
+    return self.__rules.__repr__()
   
   def keys(self): 
     """Return a list of keys in __rules"""
