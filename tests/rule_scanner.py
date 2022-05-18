@@ -367,9 +367,6 @@ class RuleScanner(object):
   def __getitem__(self, key:any) -> any: 
     return self.__rules[key] 
   
-  def __setitem__(self, key:any, value:any) -> any: 
-    self.__rules[key] = value 
-  
   def keys(self): 
     """Return a list of keys in __rules"""
     return self.__rules.keys()
