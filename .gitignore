@@ -1,2 +1,2 @@
-sample.json
-large-file.json
+tests/large-file.json
+tests/sample.json
