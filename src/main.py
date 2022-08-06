@@ -1,6 +1,7 @@
 import re 
 
 from dataclasses import dataclass
+
 @dataclass 
 class Pair: 
   kind:str
@@ -15,6 +16,7 @@ class Token:
   value:str 
   column:int=-1
   flag:bool=False 
+  
 class JSON: 
   def __init__(self, text:str): 
     self.text = text 
@@ -210,6 +212,5 @@ class JSON:
         raise RuntimeError(f'Unexpected type {kind} on line') 
 
 def load(text): 
-  return JSON(text)  
-
+  return JSON(text) 
   
