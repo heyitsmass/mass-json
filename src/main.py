@@ -16,8 +16,7 @@ class Token:
   value:str 
   column:int=-1
   flag:bool=False 
-
-
+  
 class JSON: 
   def __init__(self, text:str): 
     self.text = text 
@@ -213,16 +212,5 @@ class JSON:
         raise RuntimeError(f'Unexpected type {kind} on line') 
 
 def load(text): 
-  return JSON(text)  
-
-
-
-__filename__ = 'sample.json' 
-
-
-data = load(open(__filename__, 'r').read()) 
-
-print(data.data)  
-
-
+  return JSON(text) 
   
