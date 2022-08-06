@@ -1,2 +1,3 @@
-tests/large-file.json
-tests/sample.json
+sample.json
+large-file.json
+.DS_Store
