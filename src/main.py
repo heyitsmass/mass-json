@@ -58,9 +58,9 @@ class JSON:
         if pair.value and not flag: 
           raise RuntimeError(f"Expected ',' on line") 
 
-        flag = pair.flag 
+        flag = pair.flag
 
-        obj[pair.key] = pair.value 
+        obj[pair.key] = pair.value
 
         space = re.match(self.tokens['WS'], self.text[curr:self.size]) 
 
@@ -149,8 +149,8 @@ class JSON:
           if comma: 
             curr += comma.span()[1] 
               
-          return value, type(value), True if comma else False, curr 
-        
+    
+    return value, type(value), True if comma else False, curr 
 
     return None, None, None, curr  
 
@@ -218,7 +218,6 @@ def load(text):
 
 
 __filename__ = 'sample.json' 
-
 
 data = load(open(__filename__, 'r').read()) 
 
