@@ -55,7 +55,7 @@ class _json_:
       if pair.value and not flag: 
         raise RuntimeError("Expected ',' on line") 
 
-      #print(pair.key, pair.value.raw_value)
+      print(pair.key, pair.value.raw_value)
 
       ret[pair.key] = pair.value.raw_value 
 
@@ -95,7 +95,7 @@ class _json_:
       
       ret.append(val.raw_value)  
 
-      #print(val, index) 
+      print(val) 
     
       flag = val.flag 
       count += 1 
@@ -119,13 +119,13 @@ class _json_:
     if match: 
       kind = match.lastgroup
       value = self.convert(match.group(), kind) if kind != 'STRING' else match.groups()[1]
-
+      
       index += match.span()[1] 
 
     else: 
       for func in [self.object, self.array]: 
         value, index = func(index)  
-        if value: 
+        if value or value in [dict(), list()]: 
           kind = type(value) 
           break 
           
@@ -168,6 +168,7 @@ class _json_:
     t, index = self.value(index)  
 
     if k and t: 
+
       return Pair(k, t), index
 
     return None, index 
@@ -190,7 +191,7 @@ def load(text:str) -> _json_:
   return _json_(text) 
 
 
-__filename__ = 'sample.json' 
+__filename__ = 'large-file.json' 
 
 data = load(open(__filename__, 'r').read()) 
 
