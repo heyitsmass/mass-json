@@ -2,10 +2,7 @@
   "@odata.context": 123,
   "value": [
     {
-      "@odata.etag"
-      :
-       "W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABufX4i\""
-       ,
+      "@odata.etag":"W/\"CQAAABYAAAAoPBSqxXQOT6tuE0pxCMrtAABufX4i\"",
       "id": "AAMkADRmMDExYzhjLWYyNGMtNDZmMC1iZDU4LTRkMjk4YTdjMjU5OABGAAAAAABp4MZ-5xP3TJnNAPmjsRslBwAoPBSqxXQOT6tuE0pxCMrtAAAAAAEMAAAoPBSqxXQOT6tuE0pxCMrtAABufW1UAAA=",
       "subject": "Ruby on Rails tutorial",
       "from": {
