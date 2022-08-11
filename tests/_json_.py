@@ -1,3 +1,4 @@
+from doctest import run_docstring_examples
 import re 
 from dataclasses import dataclass
 from typing import Any 
@@ -6,13 +7,20 @@ from typing import Any
 @dataclass 
 class Value: 
   kind:str 
-  raw_value:Any
+  value:Any
   flag:bool=False
 
-@dataclass
+@dataclass 
 class Pair: 
-  key:str 
-  value:Value
+  def __init__(self, key, value): 
+    self.key = key 
+    self.value = value.value 
+    self.kind = value.kind 
+    self.flag = value.flag 
+
+  def __repr__(self):  
+    return f"Pair(key={self.key}, value={self.value}, kind={self.kind}, flag={self.flag})" 
+
 
 class _json_: 
   def __init__(self, text): 
@@ -27,111 +35,95 @@ class _json_:
     } 
     self.line_num = 0
 
-    data, index = self.object() 
+    # object scan 
+    data, index = self.scan(value=self.pair)
 
     if not data: 
-      data, index = self.array()  
-
+      data, index = self.scan(value=self.value)  
+    
     if index != self.size: 
       raise RuntimeError("EOF expected") 
 
-  def object(self, index=0): 
-    ret = dict()   
-    start = re.match(self.tokens['WS']+self.tokens['DICT_START']+self.tokens['WS'], self.text[index:self.size])
+
+  def scan(self, value, index:int=0): 
+    if value == self.pair:  #object scan 
+      ret = dict() 
+      start_regex = self.tokens['DICT_START'] 
+      end_regex = self.tokens['DICT_END']  
+    else: 
+      ret = list() 
+      start_regex = self.tokens['ARR_START']  
+      end_regex = self.tokens['ARR_END']
+
+    start = re.match(self.tokens['WS'] + start_regex + self.tokens['WS'], self.text[index:self.size])  
 
     if not start: 
-      return None, index 
+      return None, index
+    
+    index += start.span()[1]  
+    flag, count, attr = True, 0, None  
 
-    index += start.span()[1] 
-    flag = True 
-    count = 0
-    pair = None 
     while index < self.size: 
-      pair, index = self.pair(index)  
+      attr, index = value(index)
 
-      if not pair: 
-        break 
-
-      if pair.value and not flag: 
-        raise RuntimeError("Expected ',' on line") 
-
-      print(pair.key, pair.value.raw_value)
-
-      ret[pair.key] = pair.value.raw_value 
-
-      flag = pair.value.flag 
-
-      count += 1 
-
-    if flag and not pair and count > 0: 
-      raise RuntimeError("Unexpected ',' on line")  
-
-    end = re.match(self.tokens['WS']+self.tokens['DICT_END']+self.tokens['WS'], self.text[index:self.size])
-
-    if not end: 
-      raise RuntimeError("Expected '}' on line") 
-
-    return ret, index+end.span()[1] 
-
-  def array(self, index=0): 
-    ret = list() 
-    start = re.match(self.tokens['WS']+self.tokens['ARR_START']+self.tokens['WS'], self.text[index:self.size])
-
-    if not start: 
-      return None, index 
-
-    index += start.span()[1] 
-    val = None 
-    count = 0 
-    flag = True 
-    while index < self.size: 
-      val, index = self.value(index)  
-        
-      if not val: 
+      if not attr: 
         break  
 
-      if val.raw_value and not flag: 
+      if attr.value and not flag: 
         raise RuntimeError(f"Expected ',' on line")  
       
-      ret.append(val.raw_value)  
+      if type(attr) == Pair: 
+        ret[attr.key] = attr.value
+      else: 
+        ret.append(attr.value)
 
-      print(val) 
-    
-      flag = val.flag 
-      count += 1 
+      #print(attr)   
+      
+      flag = attr.flag  
+      count += 1  
 
-    if flag and not val and count > 0: 
-      raise RuntimeError("Unexpected ',' on line")
+    if flag and not attr and count > 0: 
+      raise RuntimeError(f"Unexpected ',' on line {...}")
 
-    end = re.match(self.tokens['WS']+self.tokens['ARR_END']+self.tokens['WS'], self.text[index:self.size])
+    end = re.match(self.tokens['WS']+end_regex+self.tokens['WS'], self.text[index:self.size])  
 
     if not end: 
-      raise RuntimeError("Expected ']' on line")   
+      raise RuntimeError(f"Expected {end_regex} on line {...}") 
     
-    return ret, index + end.span()[1] 
+    return ret, index + end.span()[1]
 
   def value(self, index=0, stmts=['STRING', 'NUMBER', 'BOOLEAN', 'NULL']):
-    flag, kind = False, None 
+    flag, kind, value = False, None, None
     
     tok_regex = '|'.join('(?P<%s>%s)' % (key, self.tokens[key]) for key in stmts)
     match = re.match(tok_regex, self.text[index:self.size]) 
 
     if match: 
       kind = match.lastgroup
-      value = self.convert(match.group(), kind) if kind != 'STRING' else match.groups()[1]
-      
-      index += match.span()[1] 
+      match kind: 
+        case 'STRING': 
+          value = match.groups()[1]
+        case 'NUMBER':
+          if '.' in match.group(): 
+            value = float(match.group()) 
+          else: 
+            value = int(match.group()) 
+        case 'BOOLEAN': 
+          value = bool(match.group()) 
+        case '_': 
+          value = None 
 
+      index += match.span()[1] 
+    
     else: 
-      for func in [self.object, self.array]: 
-        value, index = func(index)  
+      for func in [self.pair, self.value]: 
+        value, index = self.scan(func, index) 
         if value or value in [dict(), list()]: 
           kind = type(value) 
-          break 
-          
+          break  
+
     if not kind: 
       return None, index 
-      raise RuntimeError("Missing value on line")  
 
     cma_regex = self.tokens['WS']+self.tokens['COMMA']+self.tokens['WS']
     comma = re.match(cma_regex, self.text[index:self.size])  
@@ -161,7 +153,6 @@ class _json_:
     
     if not colon: 
       return None, index 
-      raise RuntimeError("Expected ':' on line") 
 
     index += colon.span()[1]
 
@@ -173,27 +164,5 @@ class _json_:
 
     return None, index 
 
-  def convert(self, value, kind): 
-    match kind: 
-      case 'NUMBER': 
-        if '.' in value: 
-          return float(value) 
-        return int(value) 
-      case 'BOOLEAN': 
-        return bool(value) 
-      case 'NULL': 
-        return None  
-      case '_': 
-        raise RuntimeError(f'Unexpected type {kind}') 
-
-
 def load(text:str) -> _json_: 
   return _json_(text) 
-
-
-__filename__ = 'large-file.json' 
-
-data = load(open(__filename__, 'r').read()) 
-
-
- 
