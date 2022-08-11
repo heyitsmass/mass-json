@@ -1,6 +1,6 @@
 import _json_
 
-__filename__ = 'sample.json' 
+__filename__ = 'large-file.json' 
 
-_json_.load(open(__filename__, 'r').read())  
+print(_json_.load(open(__filename__, 'r').read()))
 
